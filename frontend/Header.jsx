@@ -7,7 +7,7 @@ export default function Header() {
       <nav>
         <ul className="nav-list">
           <li><a href="/">Главная</a></li>
-          <li><a href="/games">Игры</a></li>
+          <li><a href="/games">Проверить игру</a></li>
           <li><a href="/about">Личный Кабинет</a></li>
         </ul>
       </nav>
