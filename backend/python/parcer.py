@@ -31,10 +31,37 @@ async def handle_suburl(html_content, url):
         price = str(int(prices['data-price-final'])//100) + ' руб.'
     else:
         price = "Бесплатно"
-#-------------------------    
+#-------------------------
+    min_syss = soup.find('div', class_='game_area_sys_req_leftCol')
+    min_sys = []
+    if min_syss:
+        for li in min_syss.find_all('li'):
+            texts = []
+            for element in li.descendants:
+                if isinstance(element, str) and element.parent.name != 'strong':
+                    texts.append(element.strip())
+            min_sys.append(' '.join([t for t in texts if t]))
+#-------------------------
+    rec_syss = soup.find('div', class_='game_area_sys_req_rightCol')
+    rec_sys = []
+    if rec_syss:
+        for li in rec_syss.find_all('li'):
+            texts = []
+            for element in li.descendants:
+                if isinstance(element, str) and element.parent.name != 'strong':
+                    texts.append(element.strip())
+            rec_sys.append(' '.join([t for t in texts if t]))
+#-------------------------
+    scroll_imgs = soup.find('div', id='highlight_strip_scroll')
+    scroll_img = scroll_imgs.find_all('img', limit = 5) if scroll_imgs else []
+    scroll_src = [img['src'] for img in scroll_img if img.has_attr('src')]
+#-------------------------
     img_tag = soup.find('img', class_='game_header_image_full')
     img_url = img_tag['src'] if img_tag else "URL не найден"
-#-------------------------    
+#------------------------- 
+    print(scroll_src)
+    print(min_sys)
+    print(rec_sys)
     print(f"Ссылка на игру: {url}\nНазвание: {title}\nГл.Изображение: {img_url}\nОписание: {description}\nОтзывы: {review}\nДата Выхода: {release_date}\n"
            f"Разработчик: {dev}\nИздатель: {pub}\n Популярные метки: {tags_string}\n Цена: {price}\n----------- ")
 
