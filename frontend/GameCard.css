@@ -1,0 +1,57 @@
+
+.block{
+    margin-left: 0%;
+    display:block;
+    background-color: #0c0e3d;
+    width:490px;
+    height:400px;
+    border: medium solid #330752;
+    border-radius:20px;
+    overflow:hidden;
+  }
+  .block:hover {
+    filter: drop-shadow(0 0 1em #850f30);
+  }
+  .block.react:hover {
+    filter: drop-shadow(0 0 1em #850f30);
+  }
+  
+  .GamePicH{
+    border-radius: 10px;
+    margin-top: 10px;
+  }
+  .GamePicH:hover{
+    filter: drop-shadow(0 0 0.25em gray);
+  }
+  .GamePicH.react:hover {
+    filter: drop-shadow(0 0 0.25em gray);
+  }
+  
+  .cardH{
+    display: flex;
+    align-items: baseline; /* Выравниваем по базовой линии текста */
+    gap: 15px; /* Расстояние между элементами */
+    flex-wrap: wrap; /* Если места мало - переносим на новую строку */
+    height: 50px;
+  }
+  
+  .GameName{
+    text-align: left;
+    margin-left: 10px;
+  }
+  
+  .Reviews{
+        color: #DCDCDC; /* Белый текст по умолчанию */
+        padding: 4px 12px;
+        border-radius: 8px;
+        border: 2px solid #82898F ;
+        font-weight: 500;
+        margin: 8px 0;
+        opacity: 0.85;
+  }
+  .ReleaseDate{
+    text-align: left;
+    margin-left: 10px;
+
+    font-size: small;
+  }

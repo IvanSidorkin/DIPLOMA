@@ -1,7 +1,11 @@
 import Header from '../frontend/Header';
 import './App.css';
+import GameCard from '../frontend/GameCard';
+
+
 
 export default function App() {
+  
   return (
     <div className="app">
       <Header />
@@ -9,17 +13,39 @@ export default function App() {
         <div className="content-wrapper">
           <h1>Добро пожаловать в GameHub!</h1>
           <div className="game-grid">
-            <h2>Cyberpunk 2077</h2>
-            <p>Футуристический RPG-экшен</p>
+          <GameCard 
+              imageUrl="https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/105600/header.jpg?t=1731252354"
+              title="Terraria"
+              reviews="1% из 1,109,157 обзоров положительные"
+              releaseDate="16 мая. 2011 г."
+            />
+                      <GameCard 
+              imageUrl="https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/105600/header.jpg?t=1731252354"
+              title="Terraria"
+              reviews="1% из 1,109,157 обзоров положительные"
+              releaseDate="16 мая. 2011 г."
+            />
+                      <GameCard 
+              imageUrl="https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/105600/header.jpg?t=1731252354"
+              title="Terraria"
+              reviews="1% из 1,109,157 обзоров положительные"
+              releaseDate="16 мая. 2011 г."
+            />
+                      <GameCard 
+              imageUrl="https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/105600/header.jpg?t=1731252354"
+              title="Terraria"
+              reviews="50% из 1,109,157 обзоров положительные"
+              releaseDate="16 мая. 2011 г."
+            />
+                      <GameCard 
+              imageUrl="https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/105600/header.jpg?t=1731252354"
+              title="Terraria"
+              reviews="100% из 1,109,157 обзоров положительные"
+              releaseDate="16 мая. 2011 г."
+            />
+            
           </div>
-          <div className="game-card">
-            <h2>The Witcher 3</h2>
-            <p>Эпическое фэнтези</p>
-          </div>
-          <div className="game-card">
-            <h2>Elden Ring</h2>
-            <p>Открытый мир в стиле Dark Souls</p>
-            </div>
+
         </div>
       </main>
     </div>
