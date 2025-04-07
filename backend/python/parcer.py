@@ -1,11 +1,15 @@
 import asyncio
 import aiohttp
 from bs4 import BeautifulSoup
+import psycopg2
 
-async def handle_suburl(html_content, url):
+
+
+async def handle_suburl(html_content, url, conn, cur):
     soup = BeautifulSoup(html_content, 'lxml')
     game_title = soup.find('div', id='appHubAppName')
     title = game_title.text.strip() if game_title else "Название не найдено"
+
 #-------------------------
     game_description = soup.find('div', class_='game_description_snippet')
     description = game_description.text.strip() if game_description else "Описание не найдено"
@@ -23,7 +27,7 @@ async def handle_suburl(html_content, url):
     pub = publishers.find_next('a').text.strip() if publishers else "Издатель не найден"
 #-------------------------
     tags = soup.find('div', class_='glance_tags popular_tags')
-    all_tags = [a.text.strip() for a in tags.find_all('a')] if tags else ""
+    all_tags = [a.text.strip() for a in tags.find_all('a')] if tags else []
     tags_string = ", ".join(all_tags) if all_tags else "Метки не найдены"
 #-------------------------
     prices = soup.find('div', class_='game_purchase_price price')
@@ -59,13 +63,19 @@ async def handle_suburl(html_content, url):
     img_tag = soup.find('img', class_='game_header_image_full')
     img_url = img_tag['src'] if img_tag else "URL не найден"
 #------------------------- 
+    cur.execute(
+    "INSERT INTO games (name, description, reviews, release_date, dev, pub, tags, price, scroll_imgs, header_image, steam_url, min_sys, rec_sys) "
+    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+    (title, description, review, release_date, dev, pub, all_tags, price, scroll_src, img_url, url, min_sys, rec_sys)
+    )
+    conn.commit()  
     print(scroll_src)
     print(min_sys)
     print(rec_sys)
     print(f"Ссылка на игру: {url}\nНазвание: {title}\nГл.Изображение: {img_url}\nОписание: {description}\nОтзывы: {review}\nДата Выхода: {release_date}\n"
            f"Разработчик: {dev}\nИздатель: {pub}\n Популярные метки: {tags_string}\n Цена: {price}\n----------- ")
 
-async def handle_response(session, response_json):
+async def handle_response(session, response_json, conn, cur):
     print('response')
     soup = BeautifulSoup(response_json['results_html'], 'lxml')
     
@@ -75,16 +85,16 @@ async def handle_response(session, response_json):
         try:
             async with session.get(suburl, verify_ssl=False) as resp:
                 html_content = await resp.text()
-                await handle_suburl(html_content, suburl)
+                await handle_suburl(html_content, suburl, conn, cur)
         except Exception as e:
             print(f"Error processing {suburl}: {str(e)}")
 
-async def call_page(session, url):
+async def call_page(session, url, conn, cur):
     print('Async?')
     async with session.get(url, verify_ssl=False) as resp:
         try:
             json_data = await resp.json()
-            await handle_response(session, json_data)
+            await handle_response(session, json_data, conn, cur)
         except Exception as e:
             print(f"Error processing {url}: {str(e)}")
 
@@ -110,16 +120,28 @@ async def main():
         'steamLanguage': 'russian',
         'birthtime': '0',
     }
+    conn = psycopg2.connect(
+    host="localhost",
+    database="products",
+    user="postgres",
+    password="123456",
+    port = 5413,
+    )
+    cur = conn.cursor()
+
     async with aiohttp.ClientSession(headers=headers, cookies=cookies) as session:
         tasks = []
         for start in range(0, 51, 50):
             task = asyncio.create_task(
                 call_page(
                     session,
-                    url.format(start=start)
+                    url.format(start=start),
+                    conn,
+                    cur
                 )
             )
             tasks.append(task)
         await asyncio.gather(*tasks)
-
+    cur.close()
+    conn.close() 
 asyncio.run(main())
