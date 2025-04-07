@@ -41,13 +41,19 @@
   }
   
   .Reviews{
+        display: grid;
+        max-width: 40%;
+        grid-template-columns: 20px 140px;
         color: #DCDCDC; /* Белый текст по умолчанию */
-        padding: 4px 12px;
+        padding: 7px 5px;
         border-radius: 8px;
         border: 2px solid #82898F ;
         font-weight: 500;
-        margin: 8px 0;
+        margin-left: 10px;
         opacity: 0.85;
+  }
+  .ThumbsUp{
+    
   }
   .ReleaseDate{
     text-align: left;

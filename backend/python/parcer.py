@@ -2,7 +2,7 @@ import asyncio
 import aiohttp
 from bs4 import BeautifulSoup
 import psycopg2
-
+import re
 
 
 async def handle_suburl(html_content, url, conn, cur):
@@ -16,6 +16,10 @@ async def handle_suburl(html_content, url, conn, cur):
 #-------------------------
     aggr_reviews = soup.find('div', itemprop='aggregateRating')
     review = aggr_reviews['data-tooltip-html'] if aggr_reviews else "Отзывы не найдены"
+    if review != "Отзывы не найдены":
+        match = re.search(r'(\d+%) из ([\d,]+)', review)
+        if match:
+            review = f"{match.group(1)} из {match.group(2)}"
 #-------------------------
     release_dates = soup.find('div', class_='date')
     release_date = release_dates.text.strip() if release_dates else "Дата выхода не найдена"
@@ -131,7 +135,7 @@ async def main():
 
     async with aiohttp.ClientSession(headers=headers, cookies=cookies) as session:
         tasks = []
-        for start in range(0, 51, 50):
+        for start in range(0, 61000, 50):
             task = asyncio.create_task(
                 call_page(
                     session,

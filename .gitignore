@@ -44,3 +44,6 @@ lerna-debug.log*
 # Testing
 /coverage
 /.nyc_output
+
+#db
+/db

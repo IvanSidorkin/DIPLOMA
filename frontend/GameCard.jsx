@@ -1,5 +1,6 @@
 import './GameCard.css';
 import React from 'react';
+import { GoThumbsup } from "react-icons/go";
 
 function GameCard({ imageUrl, title, reviews, releaseDate }) {
   const getReviewColor = (reviewText) => {
@@ -16,13 +17,13 @@ function GameCard({ imageUrl, title, reviews, releaseDate }) {
       <img className='GamePicH' src={imageUrl} alt={title} />
       <div className='cardH'>
         <h2 className='GameName'>{title}</h2>
-        <div 
+      </div>
+      <div 
           className='Reviews' 
           style={{ backgroundColor: getReviewColor(reviews) }}
         >
-          {reviews}
+          <span className='ThumbsUp'><GoThumbsup size={20}/></span> <span>{reviews}</span>
         </div>
-      </div>
       <p className='ReleaseDate'>Дата Выхода: {releaseDate}</p>
     </div>
   );
