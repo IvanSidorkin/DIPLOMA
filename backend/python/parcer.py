@@ -7,19 +7,26 @@ import re
 
 async def handle_suburl(html_content, url, conn, cur):
     soup = BeautifulSoup(html_content, 'lxml')
-    game_title = soup.find('div', id='appHubAppName')
-    title = game_title.text.strip() if game_title else "Название не найдено"
-
 #-------------------------
-    game_description = soup.find('div', class_='game_description_snippet')
-    description = game_description.text.strip() if game_description else "Описание не найдено"
+    dlc_indicator = soup.find('div', class_='game_area_dlc_bubble')
+    if dlc_indicator:
+        print(f"Пропускаем DLC: {url}")
+        return
 #-------------------------
     aggr_reviews = soup.find('div', itemprop='aggregateRating')
     review = aggr_reviews['data-tooltip-html'] if aggr_reviews else "Отзывы не найдены"
     if review != "Отзывы не найдены":
         match = re.search(r'(\d+%) из ([\d,]+)', review)
         if match:
+            if int(match.group(2).replace(',', '')) < 1000:
+                return
             review = f"{match.group(1)} из {match.group(2)}"
+#-------------------------
+    game_title = soup.find('div', id='appHubAppName')
+    title = game_title.text.strip() if game_title else "Название не найдено"
+#-------------------------
+    game_description = soup.find('div', class_='game_description_snippet')
+    description = game_description.text.strip() if game_description else "Описание не найдено"
 #-------------------------
     release_dates = soup.find('div', class_='date')
     release_date = release_dates.text.strip() if release_dates else "Дата выхода не найдена"
@@ -66,18 +73,32 @@ async def handle_suburl(html_content, url, conn, cur):
 #-------------------------
     img_tag = soup.find('img', class_='game_header_image_full')
     img_url = img_tag['src'] if img_tag else "URL не найден"
-#------------------------- 
+#-------------------------
+    if (
+    review == "Отзывы не найдены" 
+    or title == "Название не найдено" 
+    or description == "Описание не найдено" 
+    or release_date == "Дата выхода не найдена" 
+    or dev == "Разработчик не найден" 
+    or pub == "Издатель не найден" 
+    or not all_tags  # Проверка на пустой список
+    or not min_sys 
+    or not rec_sys 
+    or not scroll_img 
+    or img_url == "URL не найден"
+):return
+#-------------------------
     cur.execute(
     "INSERT INTO games (name, description, reviews, release_date, dev, pub, tags, price, scroll_imgs, header_image, steam_url, min_sys, rec_sys) "
     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
     (title, description, review, release_date, dev, pub, all_tags, price, scroll_src, img_url, url, min_sys, rec_sys)
     )
     conn.commit()  
-    print(scroll_src)
-    print(min_sys)
-    print(rec_sys)
-    print(f"Ссылка на игру: {url}\nНазвание: {title}\nГл.Изображение: {img_url}\nОписание: {description}\nОтзывы: {review}\nДата Выхода: {release_date}\n"
-           f"Разработчик: {dev}\nИздатель: {pub}\n Популярные метки: {tags_string}\n Цена: {price}\n----------- ")
+    # print(scroll_src)
+    # print(min_sys)
+    # print(rec_sys)
+    # print(f"Ссылка на игру: {url}\nНазвание: {title}\nГл.Изображение: {img_url}\nОписание: {description}\nОтзывы: {review}\nДата Выхода: {release_date}\n"
+    #        f"Разработчик: {dev}\nИздатель: {pub}\n Популярные метки: {tags_string}\n Цена: {price}\n----------- ")
 
 async def handle_response(session, response_json, conn, cur):
     print('response')
@@ -121,6 +142,7 @@ async def main():
 
     # Куки для языка и возраста
     cookies = {
+        
         'steamLanguage': 'russian',
         'birthtime': '0',
     }

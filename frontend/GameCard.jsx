@@ -21,8 +21,9 @@ function GameCard({ imageUrl, title, reviews, releaseDate }) {
       <div 
           className='Reviews' 
           style={{ backgroundColor: getReviewColor(reviews) }}
+          title="Количество положительных обзоров"
         >
-          <span className='ThumbsUp'><GoThumbsup size={20}/></span> <span>{reviews}</span>
+          {reviews}
         </div>
       <p className='ReleaseDate'>Дата Выхода: {releaseDate}</p>
     </div>
