@@ -43,9 +43,9 @@ async def handle_suburl(html_content, url, conn, cur):
 #-------------------------
     prices = soup.find('div', class_='game_purchase_price price')
     if prices and 'data-price-final' in prices.attrs:
-        price = str(int(prices['data-price-final'])//100) + ' руб.'
+        price = prices['data-price-final']
     else:
-        price = "Бесплатно"
+        price = 0
 #-------------------------
     min_syss = soup.find('div', class_='game_area_sys_req_leftCol')
     min_sys = []
@@ -157,7 +157,7 @@ async def main():
 
     async with aiohttp.ClientSession(headers=headers, cookies=cookies) as session:
         tasks = []
-        for start in range(0, 61000, 50):
+        for start in range(0, 50, 50):
             task = asyncio.create_task(
                 call_page(
                     session,

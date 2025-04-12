@@ -74,7 +74,7 @@ body, html {
   display: grid;
   grid-template-columns: 480px 480px 480px;
   gap: 20px;
-  max-width: 100%; /* Ограничиваем максимальную ширину */
+  max-width: 80%; /* Ограничиваем максимальную ширину */
 }
 
 .search-sort-container {
@@ -148,4 +148,28 @@ body, html {
   .sort-select {
     width: 100%;
   }
+}
+.Search{
+  display: flex;
+  justify-content: left;
+  height: 40px;
+  width: 1490px;
+  margin-bottom: 20px;
+  background-color: #0c0e3d;
+  border-radius: 7px;
+  border-color: #330752;
+  font-size: large;
+}
+.sortpanel{
+  background-color: #0c0e3d;
+  border-radius: 20px;
+  border: medium solid #330752;
+}
+.pregame-grid{
+  display: grid;
+  grid-template-columns: 1500px 380px;
+}
+
+.price-slider{
+  width: 300px;
 }

@@ -2,7 +2,7 @@ import './GameCard.css';
 import React from 'react';
 import { GoThumbsup } from "react-icons/go";
 
-function GameCard({ imageUrl, title, reviews, releaseDate }) {
+function GameCard({ imageUrl, title, reviews, releaseDate, price }) {
   const getReviewColor = (reviewText) => {
     const match = reviewText.match(/^(\d+)%/);
     const percent = match ? parseInt(match[1], 10) : 0;
@@ -11,6 +11,7 @@ function GameCard({ imageUrl, title, reviews, releaseDate }) {
     if (percent >= 50) return '#F36223';
     return '#d32f2f';
   };
+  price = price/100
 
   return (
     <div className="block">
@@ -26,6 +27,7 @@ function GameCard({ imageUrl, title, reviews, releaseDate }) {
           {reviews}
         </div>
       <p className='ReleaseDate'>Дата Выхода: {releaseDate}</p>
+      <p></p>
     </div>
   );
 }
