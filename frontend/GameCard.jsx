@@ -26,7 +26,7 @@ function GameCard({ imageUrl, title, reviews, releaseDate, price }) {
         >
           {reviews}
         </div>
-      <p className='ReleaseDate'>Дата Выхода: {releaseDate}</p>
+      <p className='ReleaseDate'>Дата Выхода: {releaseDate}{price}</p>
       <p></p>
     </div>
   );

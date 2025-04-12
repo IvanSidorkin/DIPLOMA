@@ -42,7 +42,7 @@ export default function App() {
         }
         
         // Добавляем параметр цены
-        if (priceRange.currentMax <= 1800) {
+        if (priceRange.currentMax !== null && priceRange.currentMax !== undefined) {
           url.searchParams.append('maxPrice', priceRange.currentMax);
         }
         
