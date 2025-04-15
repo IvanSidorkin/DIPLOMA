@@ -34,13 +34,28 @@ app.get('/api/games', async (req, res) => {
   }
 });
 
+// Получение уникальных тегов из всех игр
+app.get('/api/tags', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT 
+        unnest(tags) as tag,
+        COUNT(*) as tag_count
+      FROM games 
+      WHERE tags IS NOT NULL AND array_length(tags, 1) > 0
+      GROUP BY tag
+      ORDER BY tag_count DESC, tag ASC
+    `);
+    res.json(rows.map(row => row.tag));
+  } catch (err) {
+    console.error('Database error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.get('/search', async (req, res) => {
   try {
-    const { name, maxPrice } = req.query;
-
-    if (!name) {
-      return res.status(400).json({ error: 'Name parameter is required' });
-    }
+    const { name, maxPrice, tags } = req.query;
 
     let query = `
       SELECT 
@@ -50,32 +65,45 @@ app.get('/search', async (req, res) => {
         header_image,
         price
       FROM games
-      WHERE name ILIKE $1
+      WHERE 1=1
     `;
 
-    const params = [`%${name}%`];
-    let paramIndex = 2;
-    const priceValue = maxPrice * 100;
-    // Добавляем фильтрацию по цене
-    if (priceValue !== undefined) {
-        if (priceValue > 1800*100) {} 
-        else if (priceValue > 2 && priceValue <= 1800*100) {
-        // Фильтр по максимальной цене
-        
-        if (!isNaN(priceValue) && priceValue !== 0) {
-          query += ` AND price <= $${paramIndex++}`;
-          
-          params.push(priceValue);
-        }
+    const params = [];
+    let paramIndex = 1;
+
+    if (name) {
+      query += ` AND name ILIKE $${paramIndex++}`;
+      params.push(`%${name}%`);
+    }
+
+    if (maxPrice) {
+      const priceValue = maxPrice * 100;
+      if (priceValue > 1800*100) {
+        // Без фильтра
+      } 
+      else if (priceValue > 2 && priceValue <= 1800*100) {
+        query += ` AND price <= $${paramIndex++}`;
+        params.push(priceValue);
       }
       else if (priceValue < 1) {
-        // Только бесплатные игры
         query += ` AND price < 1`;
       }
     }
 
-    query += ' ORDER BY name LIMIT 50';
+    if (tags) {
+      const tagArray = typeof tags === 'string' ? tags.split(',') : [];
+      if (tagArray.length > 0) {
+        query += ` AND (`;
+        tagArray.forEach((tag, index) => {
+          if (index > 0) query += ` AND `; // Изменили OR на AND для фильтрации по всем тегам
+          query += `$${paramIndex++} = ANY(tags)`;
+          params.push(tag.trim());
+        });
+        query += `)`;
+      }
+    }
 
+    query += ' ORDER BY name LIMIT 50';
     const { rows } = await pool.query(query, params);
     res.json(rows);
 

@@ -173,3 +173,18 @@ body, html {
 .price-slider{
   width: 300px;
 }
+
+.price-filter{
+  border: medium solid #330752;
+  border-radius: 12px;
+}
+.tags-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 5px;
+  width: 350px; /* Фиксированная ширина */
+  text-align: left;
+}

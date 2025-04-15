@@ -6,20 +6,25 @@ import { useState, useEffect } from 'react';
 export default function App() {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tagsLoading, setTagsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [priceRange, setPriceRange] = useState({
     min: 0,
-    max: 1950, // Максимальная цена по умолчанию
-    currentMax: 1950 // Текущее значение слайдера
+    max: 1950,
+    currentMax: 1950
   });
+  const [tags, setTags] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [visibleTagsCount, setVisibleTagsCount] = useState(5);
+  const [tagSearchQuery, setTagSearchQuery] = useState('');
 
   // Функция для форматирования цены
   const formatPrice = (price) => {
     if (price > 1800) {
-      return "Любая цена"
+      return "Любая цена";
     }
-    if (price === 0){
-      return "Бесплатно"
+    if (price === 0) {
+      return "Бесплатно";
     }
     return `До ${new Intl.NumberFormat('ru-RU', {
       style: 'currency',
@@ -28,15 +33,63 @@ export default function App() {
     }).format(price)}`;
   };
 
+  // Функция для фильтрации тегов
+  const filteredTags = [
+    // Сначала выбранные теги
+    ...tags.filter(tag => 
+      selectedTags.includes(tag) && 
+      tag.toLowerCase().includes(tagSearchQuery.toLowerCase())
+    ),
+    // Затем остальные подходящие теги
+    ...tags.filter(tag => 
+      !selectedTags.includes(tag) && 
+      tag.toLowerCase().includes(tagSearchQuery.toLowerCase())
+    )
+  ];
+
+// Функция для показа больше тегов
+const showMoreTags = () => {
+  setVisibleTagsCount(prev => prev + 20);
+};
+
+const handleTagToggle = (tag) => {
+  setSelectedTags(prev => 
+    prev.includes(tag) 
+      ? prev.filter(t => t !== tag) 
+      : [...prev, tag]
+  );
+};
+  // Загрузка тегов
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        setTagsLoading(true);
+        const response = await fetch('http://localhost:5000/api/tags');
+        if (!response.ok) throw new Error('Ошибка загрузки тегов');
+        const data = await response.json();
+        setTags(data);
+      } catch (error) {
+        console.error('Ошибка загрузки тегов:', error);
+      } finally {
+        setTagsLoading(false);
+      }
+    };
+
+    fetchTags();
+  }, []);
+
   useEffect(() => {
     const fetchGames = async () => {
       try {
-        const url = new URL(
-          searchQuery 
-            ? `http://localhost:5000/search`
-            : 'http://localhost:5000/api/games'
-        );
-        
+        setLoading(true);
+        const useSearchEndpoint = searchQuery || selectedTags.length > 0 || priceRange.currentMax !== 1950;
+      
+      const url = new URL(
+        useSearchEndpoint 
+          ? 'http://localhost:5000/search'
+          : 'http://localhost:5000/api/games'
+      );
+      if (useSearchEndpoint) {
         if (searchQuery) {
           url.searchParams.append('name', searchQuery);
         }
@@ -46,6 +99,10 @@ export default function App() {
           url.searchParams.append('maxPrice', priceRange.currentMax);
         }
         
+        if (selectedTags.length > 0) {
+          url.searchParams.append('tags', selectedTags.join(',')); // Передаем как строку с запятыми
+        }
+      }
         const response = await fetch(url.toString());
         if (!response.ok) {
           throw new Error('Ошибка загрузки данных');
@@ -62,8 +119,7 @@ export default function App() {
     };
 
     fetchGames();
-  }, [searchQuery, priceRange.currentMax]);
-
+  }, [searchQuery, priceRange.currentMax, selectedTags]);
   const handleSearch = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -123,6 +179,42 @@ export default function App() {
                       className="price-slider"
                     />
                   </div>
+                  <div className="tags-filter">
+                  <h4>Теги</h4>
+                  <input
+                    type="text"
+                    placeholder="Поиск тегов..."
+                    value={tagSearchQuery}
+                    onChange={(e) => setTagSearchQuery(e.target.value)}
+                    className="tag-search-input"
+                  />
+                  {tagsLoading ? (
+                    <p>Загрузка тегов...</p>
+                  ) : filteredTags.length > 0 ? (
+                    <>
+                      <div className="tags-container">
+                        {filteredTags.slice(0, visibleTagsCount).map(tag => (
+                          <label key={tag} className="tag-checkbox">
+                            <input
+                              type="checkbox"
+                              checked={selectedTags.includes(tag)}
+                              onChange={() => handleTagToggle(tag)}
+                            />
+                            <span className="checkbox-custom"></span>
+                            {tag}
+                          </label>
+                        ))}
+                      </div>
+                      {visibleTagsCount < filteredTags.length && (
+                        <button onClick={showMoreTags} className="show-more-tags">
+                          Показать еще
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <p>Теги не найдены</p>
+                  )}
+                </div>
                 </div>
               </>
             )}
