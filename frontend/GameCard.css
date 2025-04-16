@@ -29,24 +29,24 @@
   
   .cardH{
     display: flex;
-    align-items: baseline; /* Выравниваем по базовой линии текста */
-    gap: 15px; /* Расстояние между элементами */
-    flex-wrap: nowrap; /* Если места мало - переносим на новую строку */
+    align-items: baseline; 
+    gap: 15px;
+    flex-wrap: nowrap;
     height: 50px;
   }
   
   .GameName{
     text-align: left;
     margin-left: 10px;
-    white-space: nowrap;      /* Запрещаем перенос строк */
-    overflow: hidden;        /* Скрываем текст, выходящий за границы */
-    text-overflow: ellipsis; /* Добавляем "..." в конце */
-    max-width: 450px;        /* Указываем максимальную ширину */
+    white-space: nowrap;     
+    overflow: hidden;       
+    text-overflow: ellipsis; 
+    max-width: 450px;
   }
   
   .Reviews{
         max-width: 30%;
-        color: #DCDCDC; /* Белый текст по умолчанию */
+        color: #DCDCDC;
         padding: 7px 5px;
         border-radius: 8px;
         border: 2px solid #82898F ;
@@ -60,6 +60,5 @@
   .ReleaseDate{
     text-align: left;
     margin-left: 10px;
-
     font-size: small;
   }

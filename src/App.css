@@ -17,21 +17,6 @@
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
 .card {
   padding: 2em;
 }
@@ -39,7 +24,7 @@
 .read-the-docs {
   color: #888;
 }
-/* Убедимся, что всё растягивается на 100% ширины */
+
 body, html {
   margin: 0;
   padding: 0;
@@ -52,18 +37,16 @@ body, html {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  width: 100%; /* Добавляем 100% ширину */
-  
+  width: 100%;
 }
 
-/* Контент теперь тоже на всю ширину */
+
 .main-content {
-    margin-top: 300px; /* Убедитесь, что нет лишних отступов */
+    margin-top: 300px; 
     width: 100%;
     height: 100vh;
 }
 
-/* Центрируем содержимое внутри 100% ширины */
 .content-wrapper {
   width: 100%;
   padding: 0 1rem;
@@ -74,7 +57,7 @@ body, html {
   display: grid;
   grid-template-columns: 480px 480px 480px;
   gap: 20px;
-  max-width: 80%; /* Ограничиваем максимальную ширину */
+  max-width: 80%; 
 }
 
 .search-sort-container {
@@ -129,26 +112,6 @@ body, html {
   cursor: pointer;
 }
 
-/* Адаптация для мобильных */
-@media (max-width: 768px) {
-  .search-sort-container {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .search-container {
-    max-width: 100%;
-  }
-  
-  .sort-container {
-    margin-left: 0;
-    width: 100%;
-  }
-  
-  .sort-select {
-    width: 100%;
-  }
-}
 .Search{
   display: flex;
   justify-content: left;
@@ -185,6 +148,78 @@ body, html {
   max-height: 300px;
   overflow-y: auto;
   padding: 5px;
-  width: 350px; /* Фиксированная ширина */
+  width: 350px; 
   text-align: left;
+  margin-left: 30px;
+}
+
+.tag-search-input{
+  background-color: #0c0e3d;
+  border-color: #330752;
+  border-radius: 5px;
+  width: 300px;
+  height: 30px;
+  color: whitesmoke;
+}
+
+.tag-checkbox input[type="checkbox"] {
+  color: #330752;
+  width: 12px;
+  height: 12px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  outline: none;
+  display:none;
+  margin-right: 8px;
+}
+
+.tag-checkbox{
+  max-width: 250px;
+  max-height: 40px;
+  margin-top: 1px;
+  margin-bottom: 1px;
+  border: 1px solid #0c0e3d;
+  transition: all 0.2s
+}
+
+.tag-checkbox:hover{
+  background-color: #342d95;
+  border: 1px solid white;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.checkbox-custom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.tag-icon {
+  display: inline-block;
+  width: 16px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.minus-icon {
+  display: none;
+}
+
+.tag-checkbox:hover input:checked ~ .tag-icon .minus-icon {
+  display: inline;
+}
+
+.tag-checkbox.selected {
+  background-color: #342d95;
+  border: 1px solid white;
+  border-radius: 3px;
+}
+.show-more-tags{
+  background-color: #342d95;
 }

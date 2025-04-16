@@ -140,7 +140,6 @@ async def main():
         'Accept-Language': 'ru-RU,ru;q=0.9',
     }
 
-    # Куки для языка и возраста
     cookies = {
         
         'steamLanguage': 'russian',

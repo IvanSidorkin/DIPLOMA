@@ -33,19 +33,18 @@ export default function App() {
     }).format(price)}`;
   };
 
-  // Функция для фильтрации тегов
-  const filteredTags = [
-    // Сначала выбранные теги
-    ...tags.filter(tag => 
-      selectedTags.includes(tag) && 
-      tag.toLowerCase().includes(tagSearchQuery.toLowerCase())
-    ),
-    // Затем остальные подходящие теги
-    ...tags.filter(tag => 
-      !selectedTags.includes(tag) && 
-      tag.toLowerCase().includes(tagSearchQuery.toLowerCase())
-    )
-  ];
+// Функция для фильтрации тегов
+const filteredTags = [
+  // Сначала всегда показываем выбранные теги (даже если они не соответствуют поиску)
+  ...selectedTags.filter(tag => 
+    tags.includes(tag) // Проверяем, что тег все еще существует в общем списке
+  ),
+  // Затем показываем остальные теги, которые соответствуют поиску и не выбраны
+  ...tags.filter(tag => 
+    !selectedTags.includes(tag) && 
+    tag.toLowerCase().includes(tagSearchQuery.toLowerCase())
+  )
+];
 
 // Функция для показа больше тегов
 const showMoreTags = () => {
@@ -194,13 +193,19 @@ const handleTagToggle = (tag) => {
                     <>
                       <div className="tags-container">
                         {filteredTags.slice(0, visibleTagsCount).map(tag => (
-                          <label key={tag} className="tag-checkbox">
+                          <label key={tag} className={`tag-checkbox ${selectedTags.includes(tag) ? 'selected' : ''}`}>
                             <input
                               type="checkbox"
                               checked={selectedTags.includes(tag)}
                               onChange={() => handleTagToggle(tag)}
                             />
-                            <span className="checkbox-custom"></span>
+                            <span className="tag-icon">
+                              {selectedTags.includes(tag) ? (
+                                <span className="minus-icon">−</span>
+                              ) : (
+                                "+"
+                              )}
+                            </span>
                             {tag}
                           </label>
                         ))}
