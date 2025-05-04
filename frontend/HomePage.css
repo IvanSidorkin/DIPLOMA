@@ -1,0 +1,225 @@
+#root {
+    width: 100%;
+    margin: 0;
+    text-align: center;
+  }
+  
+  .logo {
+    height: 6em;
+    padding: 1.5em;
+    will-change: filter;
+    transition: filter 300ms;
+  }
+  .logo:hover {
+    filter: drop-shadow(0 0 2em #646cffaa);
+  }
+  .logo.react:hover {
+    filter: drop-shadow(0 0 2em #61dafbaa);
+  }
+  
+  .card {
+    padding: 2em;
+  }
+  
+  .read-the-docs {
+    color: #888;
+  }
+  
+  body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100vh;
+    font-family: 'Arial', sans-serif;
+  }
+  
+  .app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+  }
+  
+  
+  .main-content {
+      margin-top: 300px; 
+      width: 100%;
+      height: 100vh;
+  }
+  
+  .content-wrapper {
+    width: 100%;
+    padding: 0 1rem;
+    height: auto;
+  }
+  
+  .game-grid {
+    display: grid;
+    grid-template-columns: 480px 480px 480px;
+    gap: 20px;
+    max-width: 80%; 
+  }
+  
+  .search-sort-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 0 10px;
+    width: 100%;
+  }
+  
+  .search-container {
+    display: flex;
+    flex-grow: 1;
+    max-width: 500px;
+    align-content: right;
+  }
+  
+  .search-input {
+    padding: 10px 15px;
+    border: 1px solid #330752;
+    border-radius: 20px 0 0 20px;
+    width: 100%;
+    font-size: 1rem;
+    outline: none;
+  }
+  
+  .search-button {
+    padding: 10px 15px;
+    background-color: #e94560;
+    color: white;
+    border: none;
+    border-radius: 0 20px 20px 0;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .search-button:hover {
+    background-color: #d32f2f;
+  }
+  
+  .sort-container {
+    margin-left: 20px;
+  }
+  
+  .sort-select {
+    padding: 10px 15px;
+    border: 1px solid #330752;
+    border-radius: 20px;
+    background-color: #0c0e3d;
+    color: white;
+    cursor: pointer;
+  }
+  
+  .Search{
+    display: flex;
+    justify-content: left;
+    height: 40px;
+    width: 1490px;
+    margin-bottom: 20px;
+    background-color: #0c0e3d;
+    border-radius: 7px;
+    border-color: #330752;
+    font-size: large;
+  }
+  .sortpanel{
+    background-color: #0c0e3d;
+    border-radius: 20px;
+    border: medium solid #330752;
+  }
+  .pregame-grid{
+    display: grid;
+    grid-template-columns: 1500px 380px;
+  }
+  
+  .price-slider{
+    width: 300px;
+  }
+  
+  .price-filter{
+    border: medium solid #330752;
+    border-radius: 12px;
+  }
+  .tags-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 5px;
+    width: 350px; 
+    text-align: left;
+    margin-left: 30px;
+  }
+  
+  .tag-search-input{
+    background-color: #0c0e3d;
+    border-color: #330752;
+    border-radius: 5px;
+    width: 300px;
+    height: 30px;
+    color: whitesmoke;
+  }
+  
+  .tag-checkbox input[type="checkbox"] {
+    color: #330752;
+    width: 12px;
+    height: 12px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    outline: none;
+    display:none;
+    margin-right: 8px;
+  }
+  
+  .tag-checkbox{
+    max-width: 250px;
+    max-height: 40px;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    border: 1px solid #0c0e3d;
+    transition: all 0.2s
+  }
+  
+  .tag-checkbox:hover{
+    background-color: #342d95;
+    border: 1px solid white;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  
+  .checkbox-custom {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+  
+  .tag-icon {
+    display: inline-block;
+    width: 16px;
+    text-align: center;
+    font-weight: bold;
+  }
+  
+  .minus-icon {
+    display: none;
+  }
+  
+  .tag-checkbox:hover input:checked ~ .tag-icon .minus-icon {
+    display: inline;
+  }
+  
+  .tag-checkbox.selected {
+    background-color: #342d95;
+    border: 1px solid white;
+    border-radius: 3px;
+  }
+  .show-more-tags{
+    background-color: #342d95;
+  }

@@ -1,9 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 
 // Подключение к PostgreSQL
 const pool = new Pool({
@@ -52,6 +55,8 @@ app.get('/api/tags', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+
 
 app.get('/search', async (req, res) => {
   try {
@@ -113,7 +118,56 @@ app.get('/search', async (req, res) => {
   }
 });
 
+app.post('/register', async (req, res) => {
+  const { email, password, username } = req.body;
+  
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const result = await pool.query(
+      `INSERT INTO users (email, password_hash, username) VALUES ($1, $2, $3) RETURNING user_id, email, username`,
+      [email, hashedPassword, username]
+    );
+    
+    const token = jwt.sign({ userId: result.rows[0].user_id }, 'ваш_секретный_ключ', { expiresIn: '1h' });
+    res.status(201).json({ user: result.rows[0], token });
+  } catch (error) {
+    if (error.code === '23505') { // Ошибка уникальности в PostgreSQL
+      res.status(400).json({ error: 'Email уже занят' });
+    } else {
+      console.error('Registration error:', error);
+      res.status(500).json({ error: 'Ошибка сервера' });
+    }
+  }
+});
 
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await pool.query(`SELECT * FROM users WHERE email = $1`, [email]);
+    if (user.rows.length === 0) {
+      return res.status(401).json({ error: 'Пользователь не найден' });
+    }
+
+    const isValid = await bcrypt.compare(password, user.rows[0].password_hash);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Неверный пароль' });
+    }
+
+    const token = jwt.sign({ userId: user.rows[0].user_id }, 'ваш_секретный_ключ', { expiresIn: '1h' });
+    res.json({ 
+      user: { 
+        id: user.rows[0].user_id, 
+        email: user.rows[0].email,
+        username: user.rows[0].username
+      }, 
+      token 
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
 
 const PORT = 5000;
 app.listen(PORT, () => {
