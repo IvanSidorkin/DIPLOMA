@@ -1,8 +1,8 @@
 import './GameCard.css';
 import React from 'react';
-import { GoThumbsup } from "react-icons/go";
+import { Link } from 'react-router-dom';
 
-function GameCard({ imageUrl, title, reviews, releaseDate, price }) {
+function GameCard({ imageUrl, title, reviews, releaseDate, price, id }) {
   const getReviewColor = (reviewText) => {
     const match = reviewText.match(/^(\d+)%/);
     const percent = match ? parseInt(match[1], 10) : 0;
@@ -14,7 +14,9 @@ function GameCard({ imageUrl, title, reviews, releaseDate, price }) {
   price = price/100
 
   return (
+    
     <div className="block">
+      <Link to={`/game/${id}`}>
       <img className='GamePicH' src={imageUrl} alt={title} />
       <div className='cardH'>
         <h2 className='GameName'>{title}</h2>
@@ -28,6 +30,7 @@ function GameCard({ imageUrl, title, reviews, releaseDate, price }) {
         </div>
       <p className='ReleaseDate'>Дата Выхода: {releaseDate}{price}</p>
       <p></p>
+      </Link>
     </div>
   );
 }

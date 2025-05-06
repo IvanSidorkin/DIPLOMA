@@ -21,6 +21,7 @@ app.get('/api/games', async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT 
+        id,
         name,
         reviews,
         release_date,
@@ -34,6 +35,69 @@ app.get('/api/games', async (req, res) => {
   } catch (err) {
     console.error('Database error:', err);
     
+  }
+});
+
+// Эндпоинт для получения данных конкретной игры по ID
+app.get('/api/games/:id', async (req, res) => {
+  try {
+    const gameId = req.params.id;
+    
+    // Проверяем, что ID - число
+    if (isNaN(gameId)) {
+      return res.status(400).json({ error: 'Неверный ID игры' });
+    }
+
+    const { rows } = await pool.query(`
+      SELECT 
+        id,
+        name,
+        description,
+        reviews,
+        release_date,
+        dev AS developers,
+        pub AS publishers,
+        tags,
+        price,
+        scroll_imgs AS screenshots,
+        header_image,
+        steam_url,
+        min_sys AS min_system_requirements,
+        rec_sys AS recommended_system_requirements
+      FROM games
+      WHERE id = $1
+    `, [gameId]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Игра не найдена' });
+    }
+
+    const game = rows[0];
+    
+    // Форматируем данные для ответа
+    const responseData = {
+      id: game.id,
+      name: game.name,
+      description: game.description,
+      reviews: game.reviews,
+      release_date: game.release_date,
+      developers: game.developers,
+      publishers: game.publishers,
+      tags: game.tags || [],
+      price: game.price,
+      screenshots: game.screenshots || [],
+      header_image: game.header_image,
+      steam_url: game.steam_url,
+      system_requirements: {
+        min: game.min_system_requirements || [],
+        recommended: game.recommended_system_requirements || []
+      }
+    };
+
+    res.json(responseData);
+  } catch (err) {
+    console.error('Database error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

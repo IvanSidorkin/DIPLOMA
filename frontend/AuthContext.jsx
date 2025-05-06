@@ -4,17 +4,27 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Проверяем токен при загрузке
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      // Здесь можно добавить запрос для проверки токена
-      setUser({ email: localStorage.getItem('userEmail') });
+    const userData = localStorage.getItem('user');
+
+    if (token && userData) {
+      try {
+        // Валидация токена на сервере (опционально)
+        // Если используете JWT, можно декодировать его на клиенте
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        logout();
+      }
     }
+    setLoading(false);
   }, []);
 
-  // Регистрация (полная версия)
   const register = async (email, password, username) => {
     try {
       const response = await fetch('http://localhost:5000/register', {
@@ -29,17 +39,23 @@ export function AuthProvider({ children }) {
         throw new Error(data.error || 'Ошибка регистрации');
       }
   
-      setUser(data.user);
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('userEmail', data.user.email);
+      // Сохраняем полные данные пользователя
+      const userData = {
+        email: data.user.email,
+        username: data.user.username,
+        id: data.user.id
+      };
       
-      return { success: true };
+      setUser(userData);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      return { success: true, user: userData };
     } catch (error) {
       return { success: false, error: error.message };
     }
   };
 
-  // Логин (полная версия)
   const login = async (email, password) => {
     try {
       const response = await fetch('http://localhost:5000/login', {
@@ -48,32 +64,52 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) throw new Error('Неверные данные');
-
       const data = await response.json();
       
-      setUser(data.user);
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('userEmail', email);
+      if (!response.ok) {
+        throw new Error(data.error || 'Неверные данные');
+      }
+
+      const userData = {
+        email: data.user.email,
+        username: data.user.username,
+        id: data.user.id
+      };
       
-      return { success: true };
+      setUser(userData);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      return { success: true, user: userData };
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, error: 'Неверный email или пароль' };
+      return { success: false, error: error.message };
     }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('token');
-    localStorage.removeItem('userEmail');
+    localStorage.removeItem('user');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading,
+      login, 
+      register, 
+      logout 
+    }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

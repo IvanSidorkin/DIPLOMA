@@ -1,0 +1,131 @@
+.profile-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    color: #e0e0e0;
+    background-color: #1a1a1a;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    margin-top: 750px; 
+    width: 100%;
+    height: 133vh;
+  }
+  
+  .profile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 15px;
+  }
+  
+  .profile-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #252525;
+    border-radius: 8px;
+  }
+  
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .user-info p {
+    margin: 10px 0;
+    font-size: 16px;
+  }
+  
+  .pc-config-form .form-group {
+    margin-bottom: 15px;
+  }
+  
+  .pc-config-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  
+  .pc-config-form input {
+    width: 100%;
+    padding: 8px;
+    background-color: #333;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: white;
+  }
+  
+  .pc-config-display ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .pc-config-display li {
+    margin-bottom: 8px;
+    padding: 8px;
+    background-color: #333;
+    border-radius: 4px;
+  }
+  
+  .games-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+  }
+  
+  .game-card {
+    background-color: #333;
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .game-info {
+    flex-grow: 1;
+  }
+  
+  .recommendations {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  
+  .recommendation-card {
+    background-color: #2a2a2a;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #6200ee;
+  }
+  
+  button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+  }
+  
+  .logout-btn {
+    background-color: #d32f2f;
+    color: white;
+  }
+  
+  .edit-btn, .save-btn {
+    background-color: #6200ee;
+    color: white;
+  }
+  
+  .details-btn, .community-btn {
+    background-color: #333;
+    color: white;
+    margin-top: 10px;
+  }
+  
+  button:hover {
+    opacity: 0.9;
+  }

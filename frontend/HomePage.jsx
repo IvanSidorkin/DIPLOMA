@@ -156,6 +156,7 @@ const handleTagToggle = (tag) => {
                   {games.map((game) => (
                     <GameCard 
                       key={game.name}
+                      id={game.id}
                       imageUrl={game.header_image}
                       title={game.name}
                       reviews={game.reviews}

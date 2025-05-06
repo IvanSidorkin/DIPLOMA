@@ -67,9 +67,16 @@ async def handle_suburl(html_content, url, conn, cur):
                     texts.append(element.strip())
             rec_sys.append(' '.join([t for t in texts if t]))
 #-------------------------
-    scroll_imgs = soup.find('div', id='highlight_strip_scroll')
-    scroll_img = scroll_imgs.find_all('img', limit = 5) if scroll_imgs else []
-    scroll_src = [img['src'] for img in scroll_img if img.has_attr('src')]
+    scroll_videos = soup.find_all('div', class_='highlight_movie', limit=3)
+    scroll_video = [
+    container.get('data-mp4-hd-source') or container.get('data-webm-hd-source')
+    for container in scroll_videos if container]
+    scroll_vsrc = [src for src in scroll_video if src]
+
+    scroll_img = soup.find_all('a', class_='highlight_screenshot_link')
+    scroll_src = [img['href'] for img in scroll_img  if img.has_attr('href')] if scroll_img else []
+
+    updatedscroll_visrc = scroll_vsrc + scroll_src
 #-------------------------
     img_tag = soup.find('img', class_='game_header_image_full')
     img_url = img_tag['src'] if img_tag else "URL не найден"
@@ -91,7 +98,7 @@ async def handle_suburl(html_content, url, conn, cur):
     cur.execute(
     "INSERT INTO games (name, description, reviews, release_date, dev, pub, tags, price, scroll_imgs, header_image, steam_url, min_sys, rec_sys) "
     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-    (title, description, review, release_date, dev, pub, all_tags, price, scroll_src, img_url, url, min_sys, rec_sys)
+    (title, description, review, release_date, dev, pub, all_tags, price, updatedscroll_visrc, img_url, url, min_sys, rec_sys)
     )
     conn.commit()  
     # print(scroll_src)

@@ -1,8 +1,7 @@
-import Header from "./Header";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import './AuthPage.css'; // Стили для переключения форм
+import './AuthPage.css';
 
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState('login');
@@ -10,8 +9,13 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
-  const { login, register } = useAuth();
+  const { login, register, user } = useAuth();
   const navigate = useNavigate();
+
+  // Если пользователь уже авторизован, перенаправляем
+  useEffect(() => {
+    if (user) navigate('/profile');
+  }, [user, navigate]);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -39,9 +43,7 @@ export default function AuthPage() {
   };
 
   return (
-    
     <div className="auth-container">
-    <Header />
       <div className="tabs">
         <button
           className={`tab ${activeTab === 'login' ? 'active' : ''}`}
