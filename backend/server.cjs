@@ -128,6 +128,7 @@ app.get('/search', async (req, res) => {
 
     let query = `
       SELECT 
+        id
         name,
         reviews,
         release_date,

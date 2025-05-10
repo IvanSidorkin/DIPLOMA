@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Header from './Header';
 import './GamePage.css';
+import GameSlider from './GameSlider';
 
 export default function GamePage() {
   const { gameId } = useParams();
@@ -34,54 +35,49 @@ export default function GamePage() {
       <main className="game-content">
         <div className="game-header">
           <img src={game.header_image} alt={game.name} className="game-cover" />
-          <div className="game-info">
-            <h1>{game.name}</h1>
-            <div className="game-meta">
-              <span className="price">
-                {game.price === 0 ? 'Бесплатно' : `${game.price} ₽`}
-              </span>
-              <span className="release-date">
-                Дата выхода: {new Date(game.release_date).toLocaleDateString()}
-              </span>
-              <span className="rating">
-                Рейтинг: {game.reviews}% положительных отзывов
-              </span>
-            </div>
-            <button className="buy-button">
-              {game.price === 0 ? 'Установить' : 'Купить'}
-            </button>
-          </div>
-        </div>
-
-        <div className="game-details">
           <div className="game-description">
             <h2>Описание</h2>
             <p>{game.description || 'Описание отсутствует'}</p>
           </div>
 
-          <div className="game-screenshots">
-            <h2>Скриншоты</h2>
-            <div className="screenshots-grid">
-              {game.screenshots?.map((screenshot, index) => (
-                <img 
-                  key={index} 
-                  src={screenshot} 
-                  alt={`Скриншот ${index + 1}`} 
-                  className="screenshot"
-                />
-              ))}
+          <div className="game-info">
+            <h1>{game.name}</h1>
+            <div className="game-meta">
+              <span className="price">
+                {game.price == 0 ? 'Бесплатно' : `${game.price/100} ₽`}
+              </span>
+              <span className="release-date">
+                Дата выхода: {game.release_date}
+              </span>
+              <span className="rating">
+                Рейтинг: {game.reviews} положительных отзывов
+              </span>
             </div>
-          </div>
-
-          <div className="game-tags">
-            <h2>Теги</h2>
-            <div className="tags-list">
-              {game.tags?.map(tag => (
-                <span key={tag} className="tag">{tag}</span>
-              ))}
-            </div>
+            
+              <a href={game.steam_url} target="_blank" rel="noopener noreferrer" className='buy-ref'>
+              <button className="buy-button">
+                Купить в Steam
+              </button>
+              </a>
+            
           </div>
         </div>
+        <hr/>
+        <div className="game-details-container">
+        <div className="screenshots-section">
+          <h2>Скриншоты</h2>
+          <GameSlider scrollImgs={game.screenshots} />
+        </div>
+        
+        <div className="tags-section">
+          <h2>Теги</h2>
+          <div className="tags-list">
+            {game.tags?.map(tag => (
+              <span key={tag} className="game-tag">{tag}</span>
+            ))}
+          </div>
+        </div>
+      </div>
       </main>
     </div>
   );
