@@ -62,8 +62,8 @@ app.get('/api/games/:id', async (req, res) => {
         scroll_imgs AS screenshots,
         header_image,
         steam_url,
-        min_sys AS min_system_requirements,
-        rec_sys AS recommended_system_requirements
+        min_sys,
+        rec_sys
       FROM games
       WHERE id = $1
     `, [gameId]);
@@ -88,10 +88,8 @@ app.get('/api/games/:id', async (req, res) => {
       screenshots: game.screenshots || [],
       header_image: game.header_image,
       steam_url: game.steam_url,
-      system_requirements: {
-        min: game.min_system_requirements || [],
-        recommended: game.recommended_system_requirements || []
-      }
+      min_sys: game.min_sys || [],
+      rec_sys: game.rec_sys || []
     };
 
     res.json(responseData);

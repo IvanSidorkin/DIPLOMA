@@ -76,6 +76,28 @@ export default function GamePage() {
               <span key={tag} className="game-tag">{tag}</span>
             ))}
           </div>
+          <div className="system-requirements-section">
+    <h2>Системные требования</h2>
+    <div className="requirements-grid">
+      <div className="requirements-column">
+        <h3>Минимальные</h3>
+        <ul>
+          {game.min_sys?.map((req, index) => (
+            <li key={`min-${index}`}>{req}</li>
+          ))}
+        </ul>
+      </div>
+      <div className="requirements-column">
+        <h3>Рекомендуемые</h3>
+        <ul>
+          {game.rec_sys?.map((req, index) => (
+            <li key={`rec-${index}`}>{req}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </div>
+
         </div>
       </div>
       </main>

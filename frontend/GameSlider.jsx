@@ -18,9 +18,6 @@ const GameSlider = ({ scrollImgs = [] }) => {
     if (['mp4', 'webm', 'ogg'].includes(extension)) return 'video';
     if (['jpg', 'jpeg', 'png', 'webp'].includes(extension)) return 'image';
     
-    // Специфичные Steam URL паттерны
-    if (url.includes('/store_trailers/')) return 'video';
-    if (url.includes('/store_item_assets/') && url.includes('/ss_')) return 'image';
     
     return 'unknown';
   };

@@ -207,3 +207,39 @@
     font-size: 14px;
     white-space: nowrap;
   }
+  .system-requirements-section {
+    margin-top: 20px;
+  }
+  
+  .requirements-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 10px;
+  }
+  
+  .requirements-column {
+    background: #66c0f4;
+    padding: 15px;
+    border-radius: 5px;
+  }
+  
+  .requirements-column h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+  
+  .requirements-column ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+  }
+  
+  .requirements-column li {
+    padding: 5px 0;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .requirements-column li:last-child {
+    border-bottom: none;
+  }
