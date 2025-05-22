@@ -3,6 +3,8 @@ const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 app.use(cors());
@@ -16,6 +18,40 @@ const pool = new Pool({
   password: '123456',
   port: 5413,
 });
+const JWT_SECRET = '3a7d8f1e2c9b5a6d4e8f0a3b2c1d5e7f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4'; // Должен совпадать с тем, что используется в auth
+
+function authenticateToken(req, res, next) {
+  // 1. Проверяем токен в разных местах
+  const token = 
+    req.headers['authorization']?.split(' ')[1] || // Bearer Token
+    req.cookies?.token ||                         // Из куков
+    req.query?.token;                             // Из URL параметров
+
+  // 2. Если токена нет
+  if (!token) {
+    return res.status(401).json({ 
+      error: 'Токен доступа не предоставлен',
+      hints: [
+        'Добавьте заголовок: Authorization: Bearer YOUR_TOKEN',
+        'Или передайте токен в куках или query-параметре'
+      ]
+    });
+  }
+
+  // 3. Проверяем токен
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      console.error('Ошибка верификации токена:', err);
+      return res.status(403).json({ 
+        error: 'Недействительный токен',
+        details: err.message
+      });
+    }
+    
+    req.user = user;
+    next();
+  });
+}
 // API endpoint для получения списка игр
 app.get('/api/games', async (req, res) => {
   try {
@@ -191,7 +227,7 @@ app.post('/register', async (req, res) => {
       [email, hashedPassword, username]
     );
     
-    const token = jwt.sign({ userId: result.rows[0].user_id }, 'ваш_секретный_ключ', { expiresIn: '1h' });
+    const token = jwt.sign({ userId: result.rows[0].user_id }, JWT_SECRET, { expiresIn: '1h' });
     res.status(201).json({ user: result.rows[0], token });
   } catch (error) {
     if (error.code === '23505') { // Ошибка уникальности в PostgreSQL
@@ -217,7 +253,15 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Неверный пароль' });
     }
 
-    const token = jwt.sign({ userId: user.rows[0].user_id }, 'ваш_секретный_ключ', { expiresIn: '1h' });
+    const token = jwt.sign(
+      { 
+        userId: user.rows[0].user_id,
+        email: user.rows[0].email,
+        username: user.rows[0].username
+      },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
     res.json({ 
       user: { 
         id: user.rows[0].user_id, 
@@ -228,6 +272,50 @@ app.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// Новый эндпоинт для скачивания EXE
+app.get('/download-exe', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    // Проверяем существование пользователя
+    const userCheck = await pool.query('SELECT user_id FROM users WHERE user_id = $1', [userId]);
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    // Путь к шаблону EXE-файла
+    const exePath = path.join(__dirname, 'PC_Info.exe');
+    
+    // Читаем и модифицируем EXE
+    let exeContent = fs.readFileSync(exePath, 'binary');
+    exeContent = exeContent.replace('%USER_ID%', userId.toString());
+
+    // Отправляем файл
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', 'attachment; filename=PC_Info.exe');
+    res.send(exeContent);
+
+  } catch (err) {
+    console.error('Download EXE error:', err);
+    res.status(500).json({ error: 'Ошибка при подготовке файла' });
+  }
+});
+
+app.get('/profile', authenticateToken, async (req, res) => {
+  try {
+    const user = await pool.query(`
+      SELECT user_id, email, username 
+      FROM users 
+      WHERE user_id = $1
+    `, [req.user.userId]);
+    
+    res.json(user.rows[0]);
+  } catch (err) {
+    console.error('Profile error:', err);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });

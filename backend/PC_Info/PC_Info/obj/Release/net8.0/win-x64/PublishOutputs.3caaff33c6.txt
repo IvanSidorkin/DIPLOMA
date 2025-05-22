@@ -1,0 +1,2 @@
+C:\Users\nazar\source\repos\PC_Info\PC_Info\bin\Release\net8.0\publish\win-x64\PC_Info.pdb
+C:\Users\nazar\source\repos\PC_Info\PC_Info\bin\Release\net8.0\publish\win-x64\PC_Info.exe

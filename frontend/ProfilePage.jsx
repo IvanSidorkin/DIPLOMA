@@ -70,6 +70,12 @@ export default function ProfilePage() {
 
       <div className="profile-section">
         <div className="section-header">
+<a 
+  href="http://localhost:5000/download-exe" 
+  download="PC_Info_Collector.exe"
+>
+  <button>Скачать программу</button>
+</a>
           <h3>Конфигурация компьютера</h3>
           {isEditing ? (
             <button onClick={saveConfig} className="save-btn">Сохранить</button>
