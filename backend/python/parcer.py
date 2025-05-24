@@ -41,7 +41,11 @@ async def handle_suburl(html_content, url, conn, cur):
     all_tags = [a.text.strip() for a in tags.find_all('a')] if tags else []
     tags_string = ", ".join(all_tags) if all_tags else "Метки не найдены"
 #-------------------------
-    prices = soup.find('div', class_='game_purchase_price price')
+    discount_block = soup.find('div', class_='discount_block game_purchase_discount')
+    if discount_block and 'data-price-final' in discount_block.attrs:
+        price = discount_block['data-price-final']
+    else:
+        prices = soup.find('div', class_='game_purchase_price price')
     if prices and 'data-price-final' in prices.attrs:
         price = prices['data-price-final']
     else:
