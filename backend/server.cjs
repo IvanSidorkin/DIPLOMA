@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 const { verify } = require('jsonwebtoken');
+const Fuse = require('fuse.js');
 const { createLogger, format, transports } = require('winston');
 const logger = createLogger({
   level: 'info',
@@ -496,6 +497,173 @@ app.patch('/profile/username', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
+
+app.post('/check-compatibility', authenticateToken, async (req, res) => {
+  try {
+    const { computer_id, game_id } = req.body;
+    if (!computer_id || !game_id) {
+      return res.status(400).json({ error: 'computer_id и game_id обязательны' });
+    }
+
+    const [comp, game] = await Promise.all([
+      pool.query(`SELECT cpu_name, gpu_name, total_ram_gb, directx_version, windows_version FROM user_computers WHERE computer_id = $1`, [computer_id]),
+      pool.query(`SELECT min_sys, rec_sys FROM games WHERE id = $1`, [game_id])
+    ]);
+
+    if (!comp.rows.length || !game.rows.length) {
+      return res.status(404).json({ error: 'ПК или игра не найдены' });
+    }
+
+    const userPc = comp.rows[0];
+    const { min_sys, rec_sys } = game.rows[0];
+
+    const parseSys = (sys) => {
+      const result = { cpu: null, gpu: null, ram: null, directx: null, windows: null };
+      if (!Array.isArray(sys)) return result;
+      for (const part of sys) {
+        const lower = part.toLowerCase();
+        if (lower.includes('intel') || lower.includes('amd')) {
+          if (!result.cpu) result.cpu = part;
+          else result.gpu = part;
+        }
+        if (/(\d+)\s*(гб|gb).*озу/i.test(part)) {
+          const match = part.match(/(\d+)/);
+          if (match) result.ram = parseInt(match[1]);
+        }
+        if (/directx|верс/i.test(part)) {
+          const match = part.match(/\d+/);
+          if (match) result.directx = parseInt(match[0]);
+        }
+        if (/windows/i.test(part)) result.windows = part;
+      }
+      return result;
+    };
+
+    const normalizeHardwareName = (name) => {
+      return name
+        .replace(/®|™|\(R\)|\(TM\)|CPU|@[\d.]+GHz/gi, '')
+        .replace(/\bNVIDIA\b|\bAMD\b|\bINTEL\b/gi, '')
+        .replace(/\bGRAPHICS\b/i, '')
+        .replace(/\bGEFORCE\b/i, 'GeForce')
+        .replace(/\bRADEON\b/i, 'Radeon')
+        .replace(/\b\d+GB\b/gi, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+    };
+
+    const parseDX = (v) => {
+      if (!v) return null;
+      const match = v.toString().match(/\d+/);
+      return match ? parseInt(match[0]) : null;
+    };
+
+    const parseWin = (str) => {
+      const match = str?.toLowerCase().match(/windows\s*(\d+)/);
+      return match ? parseInt(match[1]) : null;
+    };
+
+    const getScoreFromCandidates = async (table, inputRaw, mode = 'best') => {
+  if (!inputRaw || typeof inputRaw !== 'string') return null;
+
+  const devices = inputRaw
+    .split(/\/|или|,| or /i)
+    .map(n => normalizeHardwareName(n.trim()))
+    .filter(Boolean)
+    .filter(n =>
+      n.length > 6 &&
+      !/^\d+(\.\d+)?\s*(ghz|gb)?$/i.test(n) &&
+      !/^(directx|newer|older|version)/i.test(n) &&
+      !/^\d+$/i.test(n)
+    );
+
+  const { rows } = await pool.query(`SELECT name, score FROM ${table}`);
+  const fuse = new Fuse(rows, {
+    keys: ['name'],
+    threshold: 0.3,
+    includeScore: true,
+    ignoreLocation: true
+  });
+
+  let scores = [];
+
+  for (const name of devices) {
+    const result = fuse.search(name);
+    if (result.length) {
+      const match = result[0];
+      if (match.score > 0.35) {
+        console.warn(`⚠️ [${table}] "${name}" ≈ "${match.item.name}" — низкий score (${match.score})`);
+        continue;
+      }
+      console.log(`🔍 [${table}] "${name}" ≈ "${match.item.name}" → score: ${match.item.score}`);
+      scores.push(match.item.score);
+    } else {
+      console.warn(`❌ [${table}] "${name}" — не найдено`);
+    }
+  }
+
+  if (!scores.length) return null;
+  return mode === 'min' ? Math.min(...scores) : Math.max(...scores);
+};
+
+const isRoughlyGreaterOrEqual = (value, target, tolerance = 0.03) => {
+  if (value == null || target == null) return false;
+  return value >= target * (1 - tolerance);
+};
+
+const compare = (user, min, rec, label) => {
+  if (user == null || min == null) return `❓ Неизвестно (${label})`;
+
+  if (rec && isRoughlyGreaterOrEqual(user, rec)) return `✅ Рекомендуемый уровень`;
+  if (isRoughlyGreaterOrEqual(user, min)) return `⚠️ Минимальный уровень`;
+  return `❌ Слабый ${label}`;
+};
+
+
+    const minParsed = parseSys(min_sys);
+    const recParsed = parseSys(rec_sys);
+    const userCpuScore = await getScoreFromCandidates('cpu', userPc.cpu_name);
+    const minCpuScore = await getScoreFromCandidates('cpu', minParsed.cpu, 'min');         
+    const recCpuScore = await getScoreFromCandidates('cpu', recParsed.cpu, 'best'); 
+    const userGpuScore = await getScoreFromCandidates('gpu', userPc.gpu_name);
+    const minGpuScore = await getScoreFromCandidates('gpu', minParsed.gpu, 'min');
+    const recGpuScore = await getScoreFromCandidates('gpu', recParsed.gpu, 'best');
+
+    const result = {
+      cpu: compare(userCpuScore, minCpuScore, recCpuScore, 'процессор'),
+      gpu: compare(userGpuScore, minGpuScore, recGpuScore, 'видеокарта'),
+      ram: compare(userPc.total_ram_gb, minParsed.ram, recParsed.ram, 'ОЗУ'),
+      directx: compare(parseDX(userPc.directx_version), minParsed.directx, recParsed.directx, 'DirectX'),
+      windows: compare(parseWin(userPc.windows_version), parseWin(minParsed.windows), parseWin(recParsed.windows), 'Windows')
+    };
+    console.log('================= СРАВНЕНИЕ =================');
+    console.log(`🧠 CPU user: ${userCpuScore} | min: ${minCpuScore} | rec: ${recCpuScore}`);
+    console.log(`🎮 GPU user: ${userGpuScore} | min: ${minGpuScore} | rec: ${recGpuScore}`);
+    console.log(`💾 RAM user: ${userPc.total_ram_gb} | min: ${minParsed.ram} | rec: ${recParsed.ram}`);
+    console.log(`🌀 DirectX user: ${parseDX(userPc.directx_version)} | min: ${minParsed.directx} | rec: ${recParsed.directx}`);
+    console.log(`🪟 Windows user: ${parseWin(userPc.windows_version)} | min: ${parseWin(minParsed.windows)} | rec: ${parseWin(recParsed.windows)}`);
+    console.log('=============================================');
+
+    res.json({
+      result,
+      debug: {
+        userPc,
+        minParsed,
+        recParsed,
+        userCpuScore,
+        recCpuScore,
+        minCpuScore,
+        userGpuScore,
+        recGpuScore,
+        minGpuScore
+      }
+    });
+
+  } catch (err) {
+    console.error('Ошибка проверки совместимости:', err);
+    res.status(500).json({ error: 'Ошибка сервера', details: err.message });
+  }
+});
+
 
 
 const PORT = 5000;

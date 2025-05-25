@@ -243,3 +243,27 @@
   .requirements-column li:last-child {
     border-bottom: none;
   }
+
+  .compatibility-check {
+  background-color: #252525;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 15px;
+  border-left: 4px solid #66c0f4;
+}
+
+.compatibility-check h3 {
+  margin-top: 0;
+  color: #66c0f4;
+}
+
+.compatibility-check ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.compatibility-check li {
+  padding: 4px 0;
+  font-size: 15px;
+}

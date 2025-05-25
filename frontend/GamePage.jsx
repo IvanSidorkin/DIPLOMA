@@ -9,6 +9,9 @@ export default function GamePage() {
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [compatibility, setCompatibility] = useState(null);
+  const [checking, setChecking] = useState(false);
+
 
   useEffect(() => {
     const fetchGame = async () => {
@@ -25,6 +28,47 @@ export default function GamePage() {
     fetchGame();
   }, [gameId]);
 
+  useEffect(() => {
+  const checkCompatibility = async () => {
+    try {
+      setChecking(true);
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!token || !user) return;
+
+      // Получаем все компьютеры пользователя
+      const res = await fetch('http://localhost:5000/api/computers', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const pcs = await res.json();
+      if (!pcs || pcs.length === 0) return;
+
+      // Берем первый компьютер
+      const resCheck = await fetch('http://localhost:5000/check-compatibility', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          computer_id: pcs[0].computer_id,
+          game_id: gameId
+        })
+      });
+
+      const data = await resCheck.json();
+      setCompatibility(data.result);
+    } catch (err) {
+      console.error('Ошибка проверки совместимости:', err);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  if (game) checkCompatibility();
+}, [game]);
 
   if (error) return <div className="error">{error}</div>;
   if (!game) return <div>Игра не найдена</div>;
@@ -51,7 +95,22 @@ export default function GamePage() {
               </span>
               <span className="rating">
                 Рейтинг: {game.reviews} положительных отзывов
-              </span>
+                </span>
+              {compatibility && (
+                <div className="compatibility-check">
+                  <h3>Подходит ли вам игра?</h3>
+                  <ul>
+                    <li><strong>Процессор:</strong> {compatibility.cpu}</li>
+                    <li><strong>Видеокарта:</strong> {compatibility.gpu}</li>
+                    <li><strong>ОЗУ:</strong> {compatibility.ram}</li>
+                    <li><strong>DirectX:</strong> {compatibility.directx}</li>
+                    <li><strong>Windows:</strong> {compatibility.windows}</li>
+                  </ul>
+                </div>
+              )}
+
+            {checking && <p>🔍 Проверяем совместимость...</p>}
+
             </div>
             
               <a href={game.steam_url} target="_blank" rel="noopener noreferrer" className='buy-ref'>
