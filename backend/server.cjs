@@ -516,7 +516,6 @@ app.post('/check-compatibility', authenticateToken, async (req, res) => {
 
     const userPc = comp.rows[0];
     const { min_sys, rec_sys } = game.rows[0];
-
     const parseSys = (sys) => {
       const result = { cpu: null, gpu: null, ram: null, directx: null, windows: null };
       if (!Array.isArray(sys)) return result;
@@ -621,6 +620,12 @@ const compare = (user, min, rec, label) => {
 
     const minParsed = parseSys(min_sys);
     const recParsed = parseSys(rec_sys);
+    for (const key of ['cpu', 'gpu', 'ram', 'directx', 'windows']) {
+      if (!recParsed[key] && minParsed[key]) {
+        recParsed[key] = minParsed[key];
+        console.log(`📥 [fallback] rec_sys.${key} ← min_sys.${key}`);
+      }
+    }
     const userCpuScore = await getScoreFromCandidates('cpu', userPc.cpu_name);
     const minCpuScore = await getScoreFromCandidates('cpu', minParsed.cpu, 'min');         
     const recCpuScore = await getScoreFromCandidates('cpu', recParsed.cpu, 'best'); 

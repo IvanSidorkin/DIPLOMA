@@ -1,5 +1,3 @@
-/* Добавьте эти стили к предыдущим */
-
 .video-dot {
     background-color: #66c0f4;
   }
@@ -34,15 +32,15 @@
   }
   .video-container {
     width: 100%;
-    max-width: 800px; /* Максимальная ширина */
-    max-height: 450px; /* Максимальная высота */
+    max-width: 800px;
+    max-height: 450px;
     margin: 0 auto;
   }
   
   .video-container video {
     width: 100%;
     height: auto;
-    aspect-ratio: 16/9; /* Сохраняем соотношение сторон */
+    aspect-ratio: 16/9;
   }
   .slider-image{
     width: 800px;
@@ -115,7 +113,7 @@
     font-size: 12px;
   }
   
-  /* Полоса прокрутки для миниатюр */
+
   .thumbnails-container::-webkit-scrollbar {
     height: 6px;
   }

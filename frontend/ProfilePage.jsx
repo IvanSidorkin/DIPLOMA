@@ -23,15 +23,14 @@ export default function ProfilePage() {
         });
 
         if (!response.ok) throw new Error('Токен недействителен');
-              // ✅ Загружаем профиль
       const profile = await fetch('http://localhost:5000/profile', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const data = await profile.json();
       setProfile(data);
-      console.log('ПОЛУЧЕН ПРОФИЛЬ:', data); // << вот он!
-        fetchComputers(); // токен валиден — грузим ПК
+      console.log('ПОЛУЧЕН ПРОФИЛЬ:', data);
+        fetchComputers();
       } catch (err) {
         console.error('Token error:', err);
         logout();
@@ -141,7 +140,6 @@ export default function ProfilePage() {
   
       if (!res.ok) throw new Error(data.error || 'Ошибка обновления');
   
-      // ✅ Обновляем глобально
       const updatedUser = { ...user, username: data.username };
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));

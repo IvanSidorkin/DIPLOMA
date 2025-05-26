@@ -12,7 +12,6 @@ export default function AuthPage() {
   const { login, register, user } = useAuth();
   const navigate = useNavigate();
 
-  // Если пользователь уже авторизован, перенаправляем
   useEffect(() => {
     if (user) navigate('/profile');
   }, [user, navigate]);
