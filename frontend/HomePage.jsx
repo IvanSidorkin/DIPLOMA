@@ -18,7 +18,6 @@ export default function App() {
   const [visibleTagsCount, setVisibleTagsCount] = useState(5);
   const [tagSearchQuery, setTagSearchQuery] = useState('');
 
-  // Функция для форматирования цены
   const formatPrice = (price) => {
     if (price > 1800) {
       return "Любая цена";
@@ -33,20 +32,17 @@ export default function App() {
     }).format(price)}`;
   };
 
-// Функция для фильтрации тегов
 const filteredTags = [
-  // Сначала всегда показываем выбранные теги (даже если они не соответствуют поиску)
+
   ...selectedTags.filter(tag => 
-    tags.includes(tag) // Проверяем, что тег все еще существует в общем списке
+    tags.includes(tag) 
   ),
-  // Затем показываем остальные теги, которые соответствуют поиску и не выбраны
   ...tags.filter(tag => 
     !selectedTags.includes(tag) && 
     tag.toLowerCase().includes(tagSearchQuery.toLowerCase())
   )
 ];
 
-// Функция для показа больше тегов
 const showMoreTags = () => {
   setVisibleTagsCount(prev => prev + 20);
 };
@@ -58,7 +54,7 @@ const handleTagToggle = (tag) => {
       : [...prev, tag]
   );
 };
-  // Загрузка тегов
+
   useEffect(() => {
     const fetchTags = async () => {
       try {
@@ -93,13 +89,12 @@ const handleTagToggle = (tag) => {
           url.searchParams.append('name', searchQuery);
         }
         
-        // Добавляем параметр цены
         if (priceRange.currentMax !== null && priceRange.currentMax !== undefined) {
           url.searchParams.append('maxPrice', priceRange.currentMax);
         }
         
         if (selectedTags.length > 0) {
-          url.searchParams.append('tags', selectedTags.join(',')); // Передаем как строку с запятыми
+          url.searchParams.append('tags', selectedTags.join(','));
         }
       }
         const response = await fetch(url.toString());
@@ -109,7 +104,6 @@ const handleTagToggle = (tag) => {
         const data = await response.json();
         setGames(data);
         
-        // Обновляем максимальную цену на основе полученных данных
       } catch (error) {
         console.error('Ошибка:', error);
       } finally {

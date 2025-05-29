@@ -209,3 +209,22 @@ button:hover {
   
   text-align: left;
 }
+.pc-name-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pc-name-input {
+  padding: 5px 10px;
+  font-size: 16px;
+  width: 220px;
+}
+
+.pc-name-view {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+

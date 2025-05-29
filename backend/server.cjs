@@ -516,36 +516,46 @@ app.post('/check-compatibility', authenticateToken, async (req, res) => {
 
     const userPc = comp.rows[0];
     const { min_sys, rec_sys } = game.rows[0];
+
     const parseSys = (sys) => {
-      const result = { cpu: null, gpu: null, ram: null, directx: null, windows: null };
-      if (!Array.isArray(sys)) return result;
+      const parsed = { cpu: null, gpu: null, ram: null, directx: null, windows: null };
+      if (!Array.isArray(sys)) return parsed;
+
       for (const part of sys) {
         const lower = part.toLowerCase();
-        if (lower.includes('intel') || lower.includes('amd')) {
-          if (!result.cpu) result.cpu = part;
-          else result.gpu = part;
+
+        if (!parsed.cpu && /(intel|amd).*\d/.test(lower)) {
+          parsed.cpu = part;
+        } else if (!parsed.gpu && /(gtx|rtx|radeon|rx|hd|arc|graphics|geforce)/i.test(lower)) {
+          parsed.gpu = part;
         }
+
         if (/(\d+)\s*(гб|gb).*озу/i.test(part)) {
           const match = part.match(/(\d+)/);
-          if (match) result.ram = parseInt(match[1]);
+          if (match) parsed.ram = parseInt(match[1]);
         }
+
         if (/directx|верс/i.test(part)) {
           const match = part.match(/\d+/);
-          if (match) result.directx = parseInt(match[0]);
+          if (match) parsed.directx = parseInt(match[0]);
         }
-        if (/windows/i.test(part)) result.windows = part;
+
+        if (/windows/i.test(part)) {
+          parsed.windows = part;
+        }
       }
-      return result;
+
+      return parsed;
     };
 
     const normalizeHardwareName = (name) => {
       return name
-        .replace(/®|™|\(R\)|\(TM\)|CPU|@[\d.]+GHz/gi, '')
-        .replace(/\bNVIDIA\b|\bAMD\b|\bINTEL\b/gi, '')
-        .replace(/\bGRAPHICS\b/i, '')
-        .replace(/\bGEFORCE\b/i, 'GeForce')
-        .replace(/\bRADEON\b/i, 'Radeon')
-        .replace(/\b\d+GB\b/gi, '')
+        .toLowerCase()
+        .replace(/®|™|\(r\)|\(tm\)|cpu|@[\d.]+ghz/gi, '')
+        .replace(/(nvidia|amd|intel|geforce|radeon)/gi, '')
+        .replace(/\(.+?\)/g, '')
+        .replace(/[|\/]/g, ',')
+        .replace(/[^a-z0-9\s\.,\-]/gi, '')
         .replace(/\s{2,}/g, ' ')
         .trim();
     };
@@ -556,79 +566,101 @@ app.post('/check-compatibility', authenticateToken, async (req, res) => {
       return match ? parseInt(match[0]) : null;
     };
 
-    const parseWin = (str) => {
-      const match = str?.toLowerCase().match(/windows\s*(\d+)/);
-      return match ? parseInt(match[1]) : null;
+    const parseWin = (input) => {
+      if (!input || typeof input !== 'string') return null;
+      return input
+        .replace(/®|™/gi, '')
+        .replace(/(home|pro|enterprise|ultimate|32|64)[\s-]*bit/gi, '')
+        .replace(/(edition|version|os|operating system)/gi, '')
+        .match(/windows\s*(\d+)/i)?.[1] || null;
     };
 
     const getScoreFromCandidates = async (table, inputRaw, mode = 'best') => {
-  if (!inputRaw || typeof inputRaw !== 'string') return null;
+      if (!inputRaw || typeof inputRaw !== 'string') return null;
 
-  const devices = inputRaw
-    .split(/\/|или|,| or /i)
-    .map(n => normalizeHardwareName(n.trim()))
-    .filter(Boolean)
-    .filter(n =>
-      n.length > 6 &&
-      !/^\d+(\.\d+)?\s*(ghz|gb)?$/i.test(n) &&
-      !/^(directx|newer|older|version)/i.test(n) &&
-      !/^\d+$/i.test(n)
-    );
+      const devices = inputRaw
+        .split(/\/|или|,| or |\|/i)
+        .map(n => normalizeHardwareName(n.trim()))
+        .filter(Boolean)
+        .filter(n =>
+          n.length > 6 &&
+          !/^\d+(\.\d+)?\s*(ghz|gb)?$/i.test(n) &&
+          !/^(directx|newer|older|version)/i.test(n) &&
+          !/^\d+$/i.test(n)
+        );
 
-  const { rows } = await pool.query(`SELECT name, score FROM ${table}`);
-  const fuse = new Fuse(rows, {
-    keys: ['name'],
-    threshold: 0.3,
-    includeScore: true,
-    ignoreLocation: true
-  });
+      const { rows } = await pool.query(`SELECT name, score FROM ${table}`);
+      const fuse = new Fuse(rows, {
+        keys: ['name'],
+        threshold: 0.4,
+        includeScore: true,
+        ignoreLocation: true,
+        minMatchCharLength: 4
+      });
 
-  let scores = [];
+      let scores = [];
 
-  for (const name of devices) {
-    const result = fuse.search(name);
-    if (result.length) {
-      const match = result[0];
-      if (match.score > 0.35) {
-        console.warn(`⚠️ [${table}] "${name}" ≈ "${match.item.name}" — низкий score (${match.score})`);
-        continue;
+      for (const name of devices) {
+        const result = fuse.search(name);
+        if (result.length) {
+          const match = result[0];
+          const normalizedInput = name.toLowerCase();
+          const normalizedMatch = match.item.name.toLowerCase();
+
+          if (normalizedInput === normalizedMatch) {
+            console.log(`✅ [${table}] "${name}" точно совпадает с "${match.item.name}" → score: ${match.item.score}`);
+            scores.push(match.item.score);
+            continue;
+          }
+
+          if (match.score > 0.35) {
+            console.warn(`⚠️ [${table}] "${name}" ≈ "${match.item.name}" — низкий score (${match.score.toFixed(4)}) (использован как fallback)`);
+          } else {
+            console.log(`🔍 [${table}] "${name}" ≈ "${match.item.name}" → score: ${match.item.score}`);
+          }
+
+          scores.push(match.item.score);
+        } else {
+          console.warn(`❌ [${table}] "${name}" — не найдено`);
+        }
       }
-      console.log(`🔍 [${table}] "${name}" ≈ "${match.item.name}" → score: ${match.item.score}`);
-      scores.push(match.item.score);
-    } else {
-      console.warn(`❌ [${table}] "${name}" — не найдено`);
-    }
-  }
 
-  if (!scores.length) return null;
-  return mode === 'min' ? Math.min(...scores) : Math.max(...scores);
-};
+      console.log(`📦 Candidates parsed from "${inputRaw}":`, devices);
+      if (!scores.length) return null;
+      return mode === 'min' ? Math.min(...scores) : Math.max(...scores);
+    };
 
-const isRoughlyGreaterOrEqual = (value, target, tolerance = 0.03) => {
-  if (value == null || target == null) return false;
-  return value >= target * (1 - tolerance);
-};
+    const isRoughlyGreaterOrEqual = (value, target, tolerance = 0.03) => {
+      if (value == null || target == null) return false;
+      return value >= target * (1 - tolerance);
+    };
 
-const compare = (user, min, rec, label) => {
-  if (user == null || min == null) return `❓ Неизвестно (${label})`;
-
-  if (rec && isRoughlyGreaterOrEqual(user, rec)) return `✅ Рекомендуемый уровень`;
-  if (isRoughlyGreaterOrEqual(user, min)) return `⚠️ Минимальный уровень`;
-  return `❌ Слабый ${label}`;
-};
-
+    const compare = (user, min, rec, label) => {
+      if (user == null || min == null) return `❓ Неизвестно (${label})`;
+      if (rec && isRoughlyGreaterOrEqual(user, rec)) return `✅ Рекомендуемый уровень`;
+      if (isRoughlyGreaterOrEqual(user, min)) return `⚠️ Минимальный уровень`;
+      return `❌ Слабый(-ая) ${label}`;
+    };
 
     const minParsed = parseSys(min_sys);
     const recParsed = parseSys(rec_sys);
+
     for (const key of ['cpu', 'gpu', 'ram', 'directx', 'windows']) {
       if (!recParsed[key] && minParsed[key]) {
         recParsed[key] = minParsed[key];
         console.log(`📥 [fallback] rec_sys.${key} ← min_sys.${key}`);
       }
     }
+
+    if (!minParsed.gpu && recParsed.gpu) {
+      minParsed.gpu = recParsed.gpu;
+      console.log(`📥 [fallback] min_sys.gpu ← rec_sys.gpu`);
+    }
+
     const userCpuScore = await getScoreFromCandidates('cpu', userPc.cpu_name);
-    const minCpuScore = await getScoreFromCandidates('cpu', minParsed.cpu, 'min');         
-    const recCpuScore = await getScoreFromCandidates('cpu', recParsed.cpu, 'best'); 
+    const minCpuScore = await getScoreFromCandidates('cpu', minParsed.cpu, 'min');
+    const recCpuScore = await getScoreFromCandidates('cpu', recParsed.cpu, 'best');
+
     const userGpuScore = await getScoreFromCandidates('gpu', userPc.gpu_name);
     const minGpuScore = await getScoreFromCandidates('gpu', minParsed.gpu, 'min');
     const recGpuScore = await getScoreFromCandidates('gpu', recParsed.gpu, 'best');
@@ -637,9 +669,14 @@ const compare = (user, min, rec, label) => {
       cpu: compare(userCpuScore, minCpuScore, recCpuScore, 'процессор'),
       gpu: compare(userGpuScore, minGpuScore, recGpuScore, 'видеокарта'),
       ram: compare(userPc.total_ram_gb, minParsed.ram, recParsed.ram, 'ОЗУ'),
-      directx: compare(parseDX(userPc.directx_version), minParsed.directx, recParsed.directx, 'DirectX'),
-      windows: compare(parseWin(userPc.windows_version), parseWin(minParsed.windows), parseWin(recParsed.windows), 'Windows')
+      directx: (minParsed.directx == null && recParsed.directx == null)
+        ? 'ℹ️ Не указано издателем'
+        : compare(parseDX(userPc.directx_version), minParsed.directx, recParsed.directx, 'DirectX'),
+      windows: (minParsed.windows == null && recParsed.windows == null)
+        ? 'ℹ️ Не указано издателем'
+        : compare(parseWin(userPc.windows_version), parseWin(minParsed.windows), parseWin(recParsed.windows), 'Windows'),
     };
+
     console.log('================= СРАВНЕНИЕ =================');
     console.log(`🧠 CPU user: ${userCpuScore} | min: ${minCpuScore} | rec: ${recCpuScore}`);
     console.log(`🎮 GPU user: ${userGpuScore} | min: ${minGpuScore} | rec: ${recGpuScore}`);
@@ -668,6 +705,28 @@ const compare = (user, min, rec, label) => {
     res.status(500).json({ error: 'Ошибка сервера', details: err.message });
   }
 });
+
+// Пример для Express
+app.patch('/api/computers/:id/name', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { computer_name } = req.body;
+
+  if (!computer_name || typeof computer_name !== 'string') {
+    return res.status(400).json({ error: 'Некорректное имя' });
+  }
+
+  try {
+    await pool.query(
+      'UPDATE user_computers SET computer_name = $1 WHERE computer_id = $2',
+      [computer_name.trim(), id]
+    );
+    res.json({ success: true, computer_name: computer_name.trim() });
+  } catch (err) {
+    console.error('Ошибка обновления имени компьютера:', err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 
 
 
