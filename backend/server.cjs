@@ -42,7 +42,11 @@ const JWT_CONFIG = {
   secret: process.env.JWT_SECRET || '3a7d8f1e2c9b5a6d4e8f0a3b2c1d5e7f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4',
   expiresIn: '7d',
 };
+const codesMap = new Map(); // user_id → { code, created }
 
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 // В server.cjs
 app.get('/validate-token', authenticateToken, (req, res) => {
@@ -727,6 +731,82 @@ app.patch('/api/computers/:id/name', authenticateToken, async (req, res) => {
   }
 });
 
+app.post('/api/generate-code', authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+  const now = Date.now();
+
+  const last = codesMap.get(userId);
+  if (last && now - last.created < 60 * 1000) {
+    return res.status(429).json({ error: 'Можно запросить новый код раз в 1 минут' });
+  }
+
+  const code = generateCode();
+
+  // Очистка старых
+  await pool.query(`DELETE FROM user_codes WHERE user_id = $1`, [userId]);
+
+  await pool.query(
+    `INSERT INTO user_codes (code, user_id) VALUES ($1, $2)`,
+    [code, userId]
+  );
+
+  codesMap.set(userId, { code, created: now });
+
+  res.json({ code });
+});
+
+setInterval(async () => {
+  await pool.query(`DELETE FROM user_codes WHERE created_at < now() - INTERVAL '1 minute'`);
+}, 30000);
+
+
+app.post('/submit-system-info', async (req, res) => {
+  const { code } = req.query;
+  const pcInfo = req.body;
+
+  if (!code || code.length !== 6) {
+    return res.status(400).json({ error: 'Неверный код' });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT user_id FROM user_codes WHERE code = $1 AND created_at > NOW() - INTERVAL '10 minutes'`,
+      [code]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Код не найден или просрочен' });
+    }
+
+    const userId = result.rows[0].user_id;
+
+    await pool.query(`
+      INSERT INTO user_computers (
+        user_id, cpu_name, gpu_name, total_ram_gb, disks, 
+        directx_version, windows_version, windows_build, architecture_os
+      )
+      VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9)
+    `, [
+      userId,
+      pcInfo.CpuName,
+      pcInfo.GpuName,
+      pcInfo.TotalRamGb,
+      JSON.stringify(pcInfo.Disks),
+      pcInfo.DirectXVersion,
+      pcInfo.WindowsVersion,
+      pcInfo.WindowsBuild,
+      pcInfo.OSArchitecture,
+    ]);
+
+    // Удалим использованный код
+    await pool.query(`DELETE FROM user_codes WHERE code = $1`, [code]);
+
+    res.json({ message: 'Конфигурация успешно сохранена' });
+  } catch (err) {
+    console.error('Ошибка сохранения данных ПК:', err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
 
 
 

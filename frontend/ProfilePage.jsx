@@ -13,6 +13,9 @@ export default function ProfilePage() {
   const [newUsername, setNewUsername] = useState(user.username);
   const [editingPcId, setEditingPcId] = useState(null);
   const [newComputerName, setNewComputerName] = useState('');
+  const [verificationCode, setVerificationCode] = useState(null);
+  const [cooldown, setCooldown] = useState(0);
+
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -36,6 +39,39 @@ export default function ProfilePage() {
     };
     validateTokenAndLoad();
   }, []);
+
+const generateCode = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch('http://localhost:5000/api/generate-code', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || 'Ошибка генерации');
+      return;
+    }
+
+    setVerificationCode(data.code);
+    setCooldown(60); // 2 минуты
+  } catch (err) {
+    console.error('Ошибка генерации кода:', err);
+    alert('Ошибка сервера');
+  }
+};
+useEffect(() => {
+  if (cooldown === 0) return;
+  const interval = setInterval(() => {
+    setCooldown((c) => (c > 0 ? c - 1 : 0));
+  }, 1000);
+  return () => clearInterval(interval);
+}, [cooldown]);
+
 
   const fetchComputers = async () => {
     try {
@@ -149,6 +185,13 @@ export default function ProfilePage() {
     }
   };
 
+  const copyToClipboard = (text) => {
+  if (!text) return;
+  navigator.clipboard.writeText(text)
+    .catch(() => alert('Ошибка при копировании'));
+  };
+
+
   const formatDate = (rawDate) => {
     const d = new Date(rawDate);
     return isNaN(d) ? '—' : d.toLocaleDateString('ru-RU');
@@ -205,13 +248,39 @@ export default function ProfilePage() {
             </tbody>
           </table>
         </div>
-
+        <div className="profile-section">
+          <h3>Добавление ПК</h3>
+          <button 
+            onClick={generateCode} 
+            disabled={cooldown > 0} 
+            className="code-btn"
+          >
+            {cooldown > 0 ? `Подождите ${cooldown} сек.` : 'Показать код'}
+          </button>
+          {verificationCode && (
+            <div className="code-output">
+              <span className="code-label">Ваш код:</span>
+              <div className="code-boxes">
+                {verificationCode?.split('').map((digit, index) => (
+                  <div className="code-box" key={index}>
+                    {digit}
+                  </div>
+                ))}
+              <button onClick={() => copyToClipboard(verificationCode)} className="copy-code-btn" title="Копировать">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" fill="black">
+                <path d="M208 0L332.1 0c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9L448 336c0 26.5-21.5 48-48 48l-192 0c-26.5 0-48-21.5-48-48l0-288c0-26.5 21.5-48 48-48zM48 128l80 0 0 64-64 0 0 256 192 0 0-32 64 0 0 48c0 26.5-21.5 48-48 48L48 512c-26.5 0-48-21.5-48-48L0 176c0-26.5 21.5-48 48-48z"/>
+                </svg>
+              </button>
+              </div>
+              <p className="code-timer-note">Действует 1 минуту</p>
+            </div>
+          )}
+        </div>            
         <div className="profile-section">
           <div className="section-header">
-            <button onClick={handleDownload}>Скачать программу</button>
+            <button className='code-btn' onClick={handleDownload}>Скачать программу</button>
             <h3>Конфигурации компьютеров</h3>
           </div>
-
           {userComputers.length === 0 ? (
             <p>Нет сохранённых конфигураций</p>
           ) : (
