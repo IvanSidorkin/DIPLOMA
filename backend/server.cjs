@@ -395,27 +395,52 @@ const replaceUserIdInExe = (buffer, userId) => {
   return newBuffer;
 };
 
+// эндпоинт для скачивания WPF
+app.get('/download-wpf', authenticateToken, async (req, res) => {
+  try {
+      // Путь к EXE-файлу (замените на актуальный)
+      const filePath = path.join(__dirname, 'PCINFO.zip');
+      
+      // Проверяем, существует ли файл
+      if (!fs.existsSync(filePath)) {
+          return res.status(404).json({ error: 'Файл не найден' });
+      }
+
+      // Читаем файл и отправляем его
+      const fileStream = fs.createReadStream(filePath);
+      
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', 'attachment; filename=PCINFO.zip');
+      
+      fileStream.pipe(res); // Отправляем файл потоком
+
+  } catch (err) {
+      console.error('Download EXE error:', err);
+      res.status(500).json({ 
+          error: 'Ошибка при подготовке файла',
+          details: err.message
+      });
+  }
+});
+
 // эндпоинт для скачивания EXE
 app.get('/download-exe', authenticateToken, async (req, res) => {
   try {
-      const userId = req.user.userId;
-      const exePath = path.join(__dirname, 'PC_Info.exe');
+      // Путь к EXE-файлу (замените на актуальный)
+      const filePath = path.join(__dirname, 'PCINFO_Console.exe');
       
-      // Читаем файл
-      const exeBuffer = fs.readFileSync(exePath);
-      
-      // Заменяем ID
-      const modifiedBuffer = replaceUserIdInExe(exeBuffer, userId);
-      
-      // Проверяем, что замена произошла
-      if (modifiedBuffer.equals(exeBuffer)) {
-          throw new Error("Не удалось заменить UserID");
+      // Проверяем, существует ли файл
+      if (!fs.existsSync(filePath)) {
+          return res.status(404).json({ error: 'Файл не найден' });
       }
 
-      // Отправляем файл
+      // Читаем файл и отправляем его
+      const fileStream = fs.createReadStream(filePath);
+      
       res.setHeader('Content-Type', 'application/octet-stream');
-      res.setHeader('Content-Disposition', 'attachment; filename=PC_Info.exe');
-      res.send(modifiedBuffer);
+      res.setHeader('Content-Disposition', 'attachment; filename=PCINFO.exe');
+      
+      fileStream.pipe(res); // Отправляем файл потоком
 
   } catch (err) {
       console.error('Download EXE error:', err);
@@ -510,7 +535,7 @@ app.post('/check-compatibility', authenticateToken, async (req, res) => {
     }
 
     const [comp, game] = await Promise.all([
-      pool.query(`SELECT cpu_name, gpu_name, total_ram_gb, directx_version, windows_version FROM user_computers WHERE computer_id = $1`, [computer_id]),
+      pool.query(`SELECT cpu_name, gpu_name, total_ram_gb, directx_version, windows_version, disks FROM user_computers WHERE computer_id = $1`, [computer_id]),
       pool.query(`SELECT min_sys, rec_sys FROM games WHERE id = $1`, [game_id])
     ]);
 
@@ -578,6 +603,7 @@ app.post('/check-compatibility', authenticateToken, async (req, res) => {
         .replace(/(edition|version|os|operating system)/gi, '')
         .match(/windows\s*(\d+)/i)?.[1] || null;
     };
+
 
     const getScoreFromCandidates = async (table, inputRaw, mode = 'best') => {
       if (!inputRaw || typeof inputRaw !== 'string') return null;
@@ -681,6 +707,7 @@ app.post('/check-compatibility', authenticateToken, async (req, res) => {
         : compare(parseWin(userPc.windows_version), parseWin(minParsed.windows), parseWin(recParsed.windows), 'Windows'),
     };
 
+
     console.log('================= СРАВНЕНИЕ =================');
     console.log(`🧠 CPU user: ${userCpuScore} | min: ${minCpuScore} | rec: ${recCpuScore}`);
     console.log(`🎮 GPU user: ${userGpuScore} | min: ${minGpuScore} | rec: ${recGpuScore}`);
@@ -700,7 +727,7 @@ app.post('/check-compatibility', authenticateToken, async (req, res) => {
         minCpuScore,
         userGpuScore,
         recGpuScore,
-        minGpuScore
+        minGpuScore,
       }
     });
 
@@ -782,16 +809,15 @@ app.post('/submit-system-info', async (req, res) => {
 
     await pool.query(`
       INSERT INTO user_computers (
-        user_id, cpu_name, gpu_name, total_ram_gb, disks, 
+        user_id, cpu_name, gpu_name, total_ram_gb, 
         directx_version, windows_version, windows_build, architecture_os
       )
-      VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     `, [
       userId,
       pcInfo.CpuName,
       pcInfo.GpuName,
       pcInfo.TotalRamGb,
-      JSON.stringify(pcInfo.Disks),
       pcInfo.DirectXVersion,
       pcInfo.WindowsVersion,
       pcInfo.WindowsBuild,

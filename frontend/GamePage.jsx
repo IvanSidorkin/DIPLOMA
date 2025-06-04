@@ -122,7 +122,6 @@ export default function GamePage() {
                     <li><strong>Видеокарта:</strong> {compatibility.gpu}</li>
                     <li><strong>ОЗУ:</strong> {compatibility.ram}</li>
                     <li><strong>DirectX:</strong> {compatibility.directx}</li>
-                    <li><strong>Windows:</strong> {compatibility.windows}</li>
                   </ul>
                 </div>
               )}

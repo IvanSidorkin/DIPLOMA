@@ -15,7 +15,7 @@ export default function ProfilePage() {
   const [newComputerName, setNewComputerName] = useState('');
   const [verificationCode, setVerificationCode] = useState(null);
   const [cooldown, setCooldown] = useState(0);
-
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -162,7 +162,32 @@ useEffect(() => {
     }
   };
 
-  const handleDownload = async () => {
+  const handleDownloadFull = async () => {
+    setIsOpen(false);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/download-wpf', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Ошибка загрузки');
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'PCINFO.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message || 'Ошибка скачивания');
+    }
+  };
+
+    const handleDownloadLite = async () => {
+      setIsOpen(false);
     try {
       const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/download-exe', {
@@ -175,7 +200,7 @@ useEffect(() => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'PC_Info.exe';
+      a.download = 'PCINFO_Console.exe';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -277,10 +302,24 @@ useEffect(() => {
           )}
         </div>            
         <div className="profile-section">
-          <div className="section-header">
-            <button className='code-btn' onClick={handleDownload}>Скачать программу</button>
-            <h3>Конфигурации компьютеров</h3>
+        <div className="section-header">
+          <div className="dropdown">
+            <button className="code-btn dropdown-toggle" onClick={() => setIsOpen(!isOpen)}>
+              Скачать программу
+            </button>
+            {isOpen && (
+              <div className="dropdown-menu">
+                <button className="dropdown-item" onClick={handleDownloadFull}>
+                  Скачать полную версию
+                </button>
+                <button className="dropdown-item" onClick={handleDownloadLite}>
+                  Скачать упрощенную версию
+                </button>
+              </div>
+            )}
           </div>
+          <h3>Конфигурации компьютеров</h3>
+        </div>
           {userComputers.length === 0 ? (
             <p>Нет сохранённых конфигураций</p>
           ) : (
@@ -312,18 +351,6 @@ useEffect(() => {
                     <tr><td className="label">Процессор</td><td>{pc.cpu_name || 'Не указан'}</td></tr>
                     <tr><td className="label">Видеокарта</td><td>{pc.gpu_name || 'Не указана'}</td></tr>
                     <tr><td className="label">ОЗУ</td><td>{pc.total_ram_gb ? `${pc.total_ram_gb} GB` : 'Не указано'}</td></tr>
-                    <tr>
-                      <td className="label">Диски</td>
-                      <td>
-                        {Array.isArray(pc.disks) ? (
-                          <ul className="disk-list-table">
-                            {pc.disks.map((d, i) => (
-                              <li key={i}>{d.DeviceID || '??'} — {d.FreeSpaceGB} GB / {d.SizeGB} GB</li>
-                            ))}
-                          </ul>
-                        ) : 'Не указано'}
-                      </td>
-                    </tr>
                     <tr><td className="label">DirectX</td><td>{pc.directx_version || 'N/A'}</td></tr>
                     <tr><td className="label">Windows</td><td>{pc.windows_version || 'N/A'} (Build {pc.windows_build || 'N/A'})</td></tr>
                     <tr><td className="label">Архитектура</td><td>{pc.architecture_os || 'N/A'}</td></tr>
