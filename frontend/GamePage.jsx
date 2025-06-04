@@ -91,7 +91,7 @@ export default function GamePage() {
           <div className="game-info">
             <h1>{game.name}</h1>
             <div className="game-meta">
-              <span className="price">{game.price === 0 ? 'Бесплатно' : `${game.price / 100} ₽`}</span>
+              <span className="price">{game.price == 0 ? 'Бесплатно' : `${game.price / 100} ₽`}</span>
               <span className="release-date">Дата выхода: {game.release_date}</span>
               <span className="rating">Рейтинг: {game.reviews} положительных отзывов</span>
 
@@ -105,7 +105,7 @@ export default function GamePage() {
                 >
                   {userComputers.map((pc) => (
                     <option key={pc.computer_id} value={pc.computer_id}>
-                      {pc.computer_name || `ПК №${pc.computer_id}`}
+                      {pc.computer_name || pc.computer_id}
                     </option>
                   ))}
                 </select>

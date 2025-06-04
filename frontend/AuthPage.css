@@ -2,8 +2,8 @@
     max-width: 400px;
     margin: 2rem auto;
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding-top: 100px;
+
   }
   
   .tabs {
@@ -57,3 +57,77 @@
     text-align: center;
     margin-top: 10px;
   }
+  
+  .password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.Pinput {
+  width: 100%;
+  padding-right: 40px; /* пространство под иконку */
+  box-sizing: border-box;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent !important; /* точно убирает фон */
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  outline: none;
+}
+
+.password-toggle-btn:focus,
+.password-toggle-btn:active {
+  outline: none;
+  box-shadow: none;
+}
+
+.password-toggle-btn .MuiSvgIcon-root {
+  color: #aaa; /* или #fff если фон темный */
+  transition: color 0.2s ease;
+}
+
+.password-toggle-btn:hover .MuiSvgIcon-root {
+  color: #fff;
+}
+
+
+
+.vis-icon {
+  color: #fff;         /* Белая иконка (или любой другой цвет) */
+  font-size: 20px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.password-toggle-btn:hover .vis-icon {
+  opacity: 1;
+}
+
+.input-error {
+  border: 1px solid #ff4d4f !important;
+}
+
+.field-error {
+  color: #ff4d4f;
+  font-size: 0.85em;
+  margin-top: -10px;
+  margin-bottom: 10px;
+}
+
+
+.error-text {
+  color: red;
+  font-size: 0.85rem;
+  margin-top: -10px;
+  margin-bottom: 10px;
+}

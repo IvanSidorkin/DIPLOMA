@@ -535,7 +535,7 @@ app.post('/check-compatibility', authenticateToken, async (req, res) => {
     }
 
     const [comp, game] = await Promise.all([
-      pool.query(`SELECT cpu_name, gpu_name, total_ram_gb, directx_version, windows_version, disks FROM user_computers WHERE computer_id = $1`, [computer_id]),
+      pool.query(`SELECT cpu_name, gpu_name, total_ram_gb, directx_version, windows_version FROM user_computers WHERE computer_id = $1`, [computer_id]),
       pool.query(`SELECT min_sys, rec_sys FROM games WHERE id = $1`, [game_id])
     ]);
 

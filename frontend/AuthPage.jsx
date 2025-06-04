@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import './AuthPage.css';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState('login');
@@ -9,6 +11,12 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+
   const { login, register, user } = useAuth();
   const navigate = useNavigate();
 
@@ -18,11 +26,32 @@ export default function AuthPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (password.length < 6) {
-      setError('Пароль должен быть не менее 6 символов');
-      return;
+
+    setUsernameError('');
+    setEmailError('');
+    setPasswordError('');
+    setError('');
+
+    let hasError = false;
+
+    if (username.length < 3 || username.length > 20) {
+      setUsernameError('Имя должно содержать от 3 до 20 символов');
+      hasError = true;
     }
-  
+
+    if (email.length > 50) {
+      setEmailError('Email слишком длинный');
+      hasError = true;
+    }
+
+    const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,30}$/;
+    if (!passwordRegex.test(password)) {
+      setPasswordError('Пароль должен содержать: 6-30 символов, минимум 1 цифру и 1 спецсимвол');
+      hasError = true;
+    }
+
+    if (hasError) return;
+
     const result = await register(email, password, username);
     if (result.success) {
       navigate('/profile');
@@ -30,9 +59,24 @@ export default function AuthPage() {
       setError(result.error);
     }
   };
-  
+
   const handleLogin = async (e) => {
     e.preventDefault();
+
+    setEmailError('');
+    setPasswordError('');
+    setError('');
+
+    if (!email) {
+      setEmailError('Введите email');
+      return;
+    }
+
+    if (!password) {
+      setPasswordError('Введите пароль');
+      return;
+    }
+
     const result = await login(email, password);
     if (result.success) {
       navigate('/profile');
@@ -46,13 +90,24 @@ export default function AuthPage() {
       <div className="tabs">
         <button
           className={`tab ${activeTab === 'login' ? 'active' : ''}`}
-          onClick={() => setActiveTab('login')}
+          onClick={() => {
+            setActiveTab('login');
+            setError('');
+            setEmailError('');
+            setPasswordError('');
+          }}
         >
           Вход
         </button>
         <button
           className={`tab ${activeTab === 'register' ? 'active' : ''}`}
-          onClick={() => setActiveTab('register')}
+          onClick={() => {
+            setActiveTab('register');
+            setError('');
+            setUsernameError('');
+            setEmailError('');
+            setPasswordError('');
+          }}
         >
           Регистрация
         </button>
@@ -68,14 +123,30 @@ export default function AuthPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            className={`Pinput ${emailError ? 'input-error' : ''}`}
           />
-          <input
-            type="password"
-            placeholder="Пароль"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          {emailError && <div className="field-error">{emailError}</div>}
+
+          <div className="password-input-wrapper">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Пароль"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className={`Pinput ${passwordError ? 'input-error' : ''}`}
+            />
+            <button
+              type="button"
+              className="password-toggle-btn"
+              onClick={() => setShowPassword(!showPassword)}
+              tabIndex={-1}
+            >
+              {showPassword ? <VisibilityIcon className='vis-icon' /> : <VisibilityOffIcon className='vis-icon' />}
+            </button>
+          </div>
+          {passwordError && <div className="field-error">{passwordError}</div>}
+
           <button type="submit">Войти</button>
           <div className="auth-footer">
             <Link to="/forgot-password">Забыли пароль?</Link>
@@ -85,25 +156,52 @@ export default function AuthPage() {
         <form onSubmit={handleRegister} className="auth-form">
           <input
             type="text"
-            placeholder="Имя пользователя"
+            placeholder="Имя пользователя (3-20 символов)"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => {
+              if (e.target.value.length <= 20) {
+                setUsername(e.target.value);
+              }
+            }}
             required
+            className={`Pinput ${usernameError ? 'input-error' : ''}`}
           />
+          {usernameError && <div className="field-error">{usernameError}</div>}
+
           <input
             type="email"
-            placeholder="Email"
+            placeholder="Email (макс. 50 символов)"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              if (e.target.value.length <= 50) {
+                setEmail(e.target.value);
+              }
+            }}
             required
+            className={`Pinput ${emailError ? 'input-error' : ''}`}
           />
-          <input
-            type="password"
-            placeholder="Пароль (мин. 6 символов)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          {emailError && <div className="field-error">{emailError}</div>}
+
+          <div className="password-input-wrapper">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Пароль (6-30 символов)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className={`Pinput ${passwordError ? 'input-error' : ''}`}
+            />
+            <button
+              type="button"
+              className="password-toggle-btn"
+              onClick={() => setShowPassword(!showPassword)}
+              tabIndex={-1}
+            >
+              {showPassword ? <VisibilityIcon className='vis-icon' /> : <VisibilityOffIcon className='vis-icon' />}
+            </button>
+          </div>
+          {passwordError && <div className="field-error">{passwordError}</div>}
+
           <button type="submit">Зарегистрироваться</button>
         </form>
       )}

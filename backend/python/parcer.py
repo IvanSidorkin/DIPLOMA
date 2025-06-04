@@ -13,14 +13,16 @@ async def handle_suburl(html_content, url, conn, cur):
         print(f"Пропускаем DLC: {url}")
         return
 #-------------------------
-    aggr_reviews = soup.find('div', itemprop='aggregateRating')
-    review = aggr_reviews['data-tooltip-html'] if aggr_reviews else "Отзывы не найдены"
-    if review != "Отзывы не найдены":
+    aggr_reviews = soup.find('a', class_='user_reviews_summary_row', itemprop='aggregateRating')
+    if aggr_reviews and 'data-tooltip-html' in aggr_reviews.attrs:
+        review = aggr_reviews['data-tooltip-html']
         match = re.search(r'(\d+%) из ([\d,]+)', review)
         if match:
             if int(match.group(2).replace(',', '')) < 1000:
                 return
             review = f"{match.group(1)} из {match.group(2)}"
+    else:
+        review = "Отзывы не найдены"
 #-------------------------
     game_title = soup.find('div', id='appHubAppName')
     title = game_title.text.strip() if game_title else "Название не найдено"
@@ -42,11 +44,11 @@ async def handle_suburl(html_content, url, conn, cur):
     tags_string = ", ".join(all_tags) if all_tags else "Метки не найдены"
 #-------------------------
     discount_block = soup.find('div', class_='discount_block game_purchase_discount')
+    prices = soup.find('div', class_='game_purchase_price price')  # Ищем prices в любом случае
+
     if discount_block and 'data-price-final' in discount_block.attrs:
         price = discount_block['data-price-final']
-    else:
-        prices = soup.find('div', class_='game_purchase_price price')
-    if prices and 'data-price-final' in prices.attrs:
+    elif prices and 'data-price-final' in prices.attrs:  # Используем elif вместо отдельного if
         price = prices['data-price-final']
     else:
         price = 0
@@ -57,7 +59,7 @@ async def handle_suburl(html_content, url, conn, cur):
         for li in min_syss.find_all('li'):
             texts = []
             for element in li.descendants:
-                if isinstance(element, str) and element.parent.name != 'strong':
+                if isinstance(element, str):
                     texts.append(element.strip())
             min_sys.append(' '.join([t for t in texts if t]))
 #-------------------------
@@ -67,7 +69,7 @@ async def handle_suburl(html_content, url, conn, cur):
         for li in rec_syss.find_all('li'):
             texts = []
             for element in li.descendants:
-                if isinstance(element, str) and element.parent.name != 'strong':
+                if isinstance(element, str):
                     texts.append(element.strip())
             rec_sys.append(' '.join([t for t in texts if t]))
 #-------------------------
@@ -92,7 +94,7 @@ async def handle_suburl(html_content, url, conn, cur):
     or release_date == "Дата выхода не найдена" 
     or dev == "Разработчик не найден" 
     or pub == "Издатель не найден" 
-    or not all_tags  # Проверка на пустой список
+    or not all_tags 
     or not min_sys 
     or not rec_sys 
     or not scroll_img 
@@ -104,7 +106,8 @@ async def handle_suburl(html_content, url, conn, cur):
     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
     (title, description, review, release_date, dev, pub, all_tags, price, updatedscroll_visrc, img_url, url, min_sys, rec_sys)
     )
-    conn.commit()  
+    conn.commit()
+    print("успешно")
     # print(scroll_src)
     # print(min_sys)
     # print(rec_sys)
