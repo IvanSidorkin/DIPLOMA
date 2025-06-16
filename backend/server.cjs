@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
-const { verify } = require('jsonwebtoken');
+const crypto = require('crypto'); 
 const Fuse = require('fuse.js');
 const { createLogger, format, transports } = require('winston');
 const logger = createLogger({
@@ -27,9 +27,10 @@ const logger = createLogger({
 const app = express();
 app.use(cors());
 app.use(express.json());
-// Настройка логгера
 
-// Подключение к PostgreSQL
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '0123456789abcdef0123456789abcdef'; // 32 байта
+const IV_LENGTH = 16;
+
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
@@ -37,18 +38,18 @@ const pool = new Pool({
   password: '123456',
   port: 5413,
 });
-// Добавьте в начало server.cjs
+
 const JWT_CONFIG = {
   secret: process.env.JWT_SECRET || '3a7d8f1e2c9b5a6d4e8f0a3b2c1d5e7f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4',
   expiresIn: '7d',
 };
-const codesMap = new Map(); // user_id → { code, created }
+const codesMap = new Map();
 
 function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// В server.cjs
+//
 app.get('/validate-token', authenticateToken, (req, res) => {
   res.json({
     valid: true,
@@ -57,6 +58,26 @@ app.get('/validate-token', authenticateToken, (req, res) => {
   });
 });
 
+//
+function encrypt(text) {
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+  let encrypted = cipher.update(text, 'utf8', 'base64');
+  encrypted += cipher.final('base64');
+  return iv.toString('base64') + ':' + encrypted;
+}
+//
+function decrypt(data) {
+  if (!data || typeof data !== 'string' || !data.includes(':')) return null;
+
+  const [ivBase64, encryptedData] = data.split(':');
+  const iv = Buffer.from(ivBase64, 'base64');
+  const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+  let decrypted = decipher.update(encryptedData, 'base64', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+//
 function authenticateToken(req, res, next) {
   // 1. Получаем токен из разных источников
   const authHeader = req.headers['authorization'];
@@ -106,7 +127,7 @@ function authenticateToken(req, res, next) {
       next();
   });
 }
-// API endpoint для получения списка игр
+// 
 app.get('/api/games', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -128,7 +149,7 @@ app.get('/api/games', async (req, res) => {
   }
 });
 
-// Эндпоинт для получения данных конкретной игры по ID
+//
 app.get('/api/games/:id', async (req, res) => {
   try {
     const gameId = req.params.id;
@@ -188,8 +209,7 @@ app.get('/api/games/:id', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-// Получение уникальных тегов из всех игр
+//
 app.get('/api/tags', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -207,12 +227,10 @@ app.get('/api/tags', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-
-
+//
 app.get('/search', async (req, res) => {
   try {
-    const { name, maxPrice, tags } = req.query;
+    const { name, minPrice, maxPrice, tags } = req.query;
 
     let query = `
       SELECT 
@@ -230,22 +248,18 @@ app.get('/search', async (req, res) => {
     let paramIndex = 1;
 
     if (name) {
-      query += ` AND name ILIKE $${paramIndex++}`;
+      query += ` AND (name ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
       params.push(`%${name}%`);
+      paramIndex++;
     }
 
-    if (maxPrice) {
-      const priceValue = maxPrice * 100;
-      if (priceValue > 1800*100) {
-        // Без фильтра
-      } 
-      else if (priceValue > 2 && priceValue <= 1800*100) {
-        query += ` AND price <= $${paramIndex++}`;
-        params.push(priceValue);
-      }
-      else if (priceValue < 1) {
-        query += ` AND price < 1`;
-      }
+
+    if (minPrice || maxPrice) {
+      const min = minPrice ? parseInt(minPrice) * 100 : 0; 
+      const max = maxPrice ? parseInt(maxPrice) * 100 : 2000000;
+      
+      query += ` AND price BETWEEN $${paramIndex++} AND $${paramIndex++}`;
+      params.push(min, max);
     }
 
     if (tags) {
@@ -253,7 +267,7 @@ app.get('/search', async (req, res) => {
       if (tagArray.length > 0) {
         query += ` AND (`;
         tagArray.forEach((tag, index) => {
-          if (index > 0) query += ` AND `; // Изменили OR на AND для фильтрации по всем тегам
+          if (index > 0) query += ` AND `;
           query += `$${paramIndex++} = ANY(tags)`;
           params.push(tag.trim());
         });
@@ -369,33 +383,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-
-const replaceUserIdInExe = (buffer, userId) => {
-  // HEX-представление placeholder (UTF-16LE)
-  const placeholderHex = '300030003000300030003000300030002d0030003000300030002d0030003000300030002d0030003000300030002d003000';
-  const placeholderBuffer = Buffer.from(placeholderHex, 'hex');
-  
-
-  // Конвертируем userId в UTF-16LE
-  const userIdBuffer = Buffer.alloc(72);
-  for (let i = 0; i < userId.length; i++) {
-      userIdBuffer.writeUInt16LE(userId.charCodeAt(i), i * 2);
-  }
-
-  // Находим позицию placeholder
-  const pos = buffer.indexOf(placeholderBuffer);
-  if (pos === -1) {
-      throw new Error("Placeholder не найден в файле");
-  }
-
-  // Создаем новый буфер с заменой
-  const newBuffer = Buffer.from(buffer);
-  userIdBuffer.copy(newBuffer, pos);
-  
-  return newBuffer;
-};
-
-// эндпоинт для скачивания WPF
+//
 app.get('/download-wpf', authenticateToken, async (req, res) => {
   try {
       // Путь к EXE-файлу (замените на актуальный)
@@ -423,7 +411,7 @@ app.get('/download-wpf', authenticateToken, async (req, res) => {
   }
 });
 
-// эндпоинт для скачивания EXE
+//
 app.get('/download-exe', authenticateToken, async (req, res) => {
   try {
       // Путь к EXE-файлу (замените на актуальный)
@@ -450,7 +438,7 @@ app.get('/download-exe', authenticateToken, async (req, res) => {
       });
   }
 });
-
+//
 app.get('/api/computers', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -458,19 +446,30 @@ app.get('/api/computers', authenticateToken, async (req, res) => {
       `SELECT * FROM user_computers WHERE user_id = $1`,
       [userId]
     );
-    res.json(result.rows);
+
+    const decryptedRows = result.rows.map(row => ({
+      ...row,
+      cpu_name: decrypt(row.cpu_name),
+      gpu_name: decrypt(row.gpu_name),
+      directx_version: decrypt(row.directx_version),
+      windows_version: decrypt(row.windows_version),
+      windows_build: decrypt(row.windows_build),
+      architecture_os: decrypt(row.architecture_os),
+    }));
+
+    res.json(decryptedRows);
   } catch (err) {
-    logger.error('Ошибка при получении конфигураций ПК', { error: err.message });
+    logger.error('Ошибка при получении конфигураций ПК (дешифровка)', { error: err.message });
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
-
+//
 app.delete('/api/computers/:computerId', authenticateToken, async (req, res) => {
   const { computerId } = req.params;
   const userId = req.user.userId;
 
   try {
-    // Проверим, что ПК принадлежит пользователю
+
     const check = await pool.query(
       `SELECT * FROM user_computers WHERE computer_id = $1 AND user_id = $2`,
       [computerId, userId]
@@ -492,7 +491,7 @@ app.delete('/api/computers/:computerId', authenticateToken, async (req, res) => 
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
-
+//
 app.get('/profile', authenticateToken, async (req, res) => {
   try {
     const user = await pool.query(`
@@ -507,20 +506,22 @@ app.get('/profile', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
-
+//
 app.patch('/profile/username', authenticateToken, async (req, res) => {
   try {
     const { username } = req.body;
-    if (!username || username.length < 3) {
+    if (!username || username.length < 3 || username.length > 20) {
       return res.status(400).json({ error: 'Некорректный никнейм' });
     }
 
     await pool.query(
-      `UPDATE users SET username = $1 WHERE user_id = $2`,
-      [username, req.user.userId]
+      `UPDATE users 
+       SET username = $1, updated_at = NOW() 
+       WHERE user_id = $2`,
+      [username.trim(), req.user.userId]
     );
 
-    res.json({ message: 'Никнейм обновлён', username });
+    res.json({ message: 'Никнейм обновлён', username: username.trim() });
   } catch (err) {
     console.error('Ошибка обновления ника:', err);
     res.status(500).json({ error: 'Ошибка сервера' });
@@ -543,7 +544,16 @@ app.post('/check-compatibility', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'ПК или игра не найдены' });
     }
 
-    const userPc = comp.rows[0];
+    const userPcRaw = comp.rows[0];
+    const userPc = {
+      cpu_name: decrypt(userPcRaw.cpu_name),
+      gpu_name: decrypt(userPcRaw.gpu_name),
+      total_ram_gb: userPcRaw.total_ram_gb,
+      directx_version: decrypt(userPcRaw.directx_version),
+      windows_version: decrypt(userPcRaw.windows_version),
+      windows_build: decrypt(userPcRaw.windows_build),
+      architecture_os: decrypt(userPcRaw.architecture_os),
+    };
     const { min_sys, rec_sys } = game.rows[0];
 
     const parseSys = (sys) => {
@@ -737,7 +747,7 @@ app.post('/check-compatibility', authenticateToken, async (req, res) => {
   }
 });
 
-// Пример для Express
+//
 app.patch('/api/computers/:id/name', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { computer_name } = req.body;
@@ -757,14 +767,14 @@ app.patch('/api/computers/:id/name', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
-
+//
 app.post('/api/generate-code', authenticateToken, async (req, res) => {
   const userId = req.user.userId;
   const now = Date.now();
 
   const last = codesMap.get(userId);
   if (last && now - last.created < 60 * 1000) {
-    return res.status(429).json({ error: 'Можно запросить новый код раз в 1 минут' });
+    return res.status(429).json({ error: 'Можно запросить новый код раз в 1 минуту' });
   }
 
   const code = generateCode();
@@ -781,12 +791,12 @@ app.post('/api/generate-code', authenticateToken, async (req, res) => {
 
   res.json({ code });
 });
-
+//
 setInterval(async () => {
   await pool.query(`DELETE FROM user_codes WHERE created_at < now() - INTERVAL '1 minute'`);
 }, 30000);
 
-
+//
 app.post('/submit-system-info', async (req, res) => {
   const { code } = req.query;
   const pcInfo = req.body;
@@ -797,7 +807,7 @@ app.post('/submit-system-info', async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT user_id FROM user_codes WHERE code = $1 AND created_at > NOW() - INTERVAL '10 minutes'`,
+      `SELECT user_id FROM user_codes WHERE code = $1 AND created_at > NOW() - INTERVAL '1 minutes'`,
       [code]
     );
 
@@ -814,17 +824,16 @@ app.post('/submit-system-info', async (req, res) => {
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     `, [
-      userId,
-      pcInfo.CpuName,
-      pcInfo.GpuName,
-      pcInfo.TotalRamGb,
-      pcInfo.DirectXVersion,
-      pcInfo.WindowsVersion,
-      pcInfo.WindowsBuild,
-      pcInfo.OSArchitecture,
+  userId,
+  encrypt(pcInfo.CpuName),
+  encrypt(pcInfo.GpuName),
+  pcInfo.TotalRamGb,
+  encrypt(pcInfo.DirectXVersion),
+  encrypt(pcInfo.WindowsVersion),
+  encrypt(pcInfo.WindowsBuild),
+  encrypt(pcInfo.OSArchitecture),
     ]);
 
-    // Удалим использованный код
     await pool.query(`DELETE FROM user_codes WHERE code = $1`, [code]);
 
     res.json({ message: 'Конфигурация успешно сохранена' });

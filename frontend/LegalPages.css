@@ -1,0 +1,60 @@
+
+.legal-container {
+  max-width: 800px;
+  margin: 350px auto;
+  padding: 2rem;
+  background-color: #1e1e1e;
+  color: #f1f1f1;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(150, 150, 255, 0.2);
+}
+
+.legal-container h1 {
+  color: #a085ff;
+  margin-bottom: 1.5rem;
+}
+
+.legal-container h2 {
+  margin-top: 1.5rem;
+  color: #c3baff;
+}
+
+.legal-container ul {
+  
+  list-style: disc;
+  padding-left: 20px;
+}
+
+.legal-container p {
+  line-height: 1.6;
+}
+.bold{
+    font-weight: bold;
+}
+
+.privacy-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 2rem;
+  background-color: #1e1e1e;
+  color: #e6e6e6;
+  font-size: 15px;
+  border: 1px solid #444;
+}
+
+.privacy-table th,
+.privacy-table td {
+  border: 1px solid #555;
+  padding: 12px;
+  vertical-align: top;
+  text-align: left;
+}
+
+.privacy-table thead {
+  background-color: #292042;
+  color: #a88cff;
+}
+
+li{
+  text-align: left;
+}

@@ -88,19 +88,7 @@ useEffect(() => {
     }
   };
 
-  const deleteComputer = async (computerId) => {
-    if (!window.confirm('Удалить этот компьютер?')) return;
-    try {
-      const token = localStorage.getItem('token');
-      await fetch(`http://localhost:5000/api/computers/${computerId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUserComputers((prev) => prev.filter((pc) => pc.computer_id !== computerId));
-    } catch (err) {
-      console.error('Ошибка удаления ПК:', err);
-    }
-  };
+s
 
   const saveUsername = async () => {
     try {

@@ -10,27 +10,18 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [priceRange, setPriceRange] = useState({
     min: 0,
-    max: 1950,
-    currentMax: 1950
+    max: 20000,
+    currentMax: 20000
   });
+  const [priceRangeInput, setPriceRangeInput] = useState({
+  min: 0,
+  max: 20000
+});
   const [tags, setTags] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
   const [visibleTagsCount, setVisibleTagsCount] = useState(5);
   const [tagSearchQuery, setTagSearchQuery] = useState('');
 
-  const formatPrice = (price) => {
-    if (price > 1800) {
-      return "Любая цена";
-    }
-    if (price === 0) {
-      return "Бесплатно";
-    }
-    return `До ${new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      maximumFractionDigits: 0
-    }).format(price)}`;
-  };
 
 const filteredTags = [
 
@@ -73,46 +64,49 @@ const handleTagToggle = (tag) => {
     fetchTags();
   }, []);
 
-  useEffect(() => {
-    const fetchGames = async () => {
-      try {
-        setLoading(true);
-        const useSearchEndpoint = searchQuery || selectedTags.length > 0 || priceRange.currentMax !== 1950;
-      
+useEffect(() => {
+  const fetchGames = async () => {
+    try {
+      setLoading(true);
+      const useSearchEndpoint = 
+        searchQuery || 
+        selectedTags.length > 0 || 
+        priceRange.min !== 0 || 
+        priceRange.currentMax !== 20000;
+    
       const url = new URL(
         useSearchEndpoint 
           ? 'http://localhost:5000/search'
           : 'http://localhost:5000/api/games'
       );
+      
       if (useSearchEndpoint) {
         if (searchQuery) {
           url.searchParams.append('name', searchQuery);
         }
         
-        if (priceRange.currentMax !== null && priceRange.currentMax !== undefined) {
-          url.searchParams.append('maxPrice', priceRange.currentMax);
-        }
+        // Всегда отправляем оба параметра цены
+        url.searchParams.append('minPrice', priceRange.min);
+        url.searchParams.append('maxPrice', priceRange.currentMax);
         
         if (selectedTags.length > 0) {
           url.searchParams.append('tags', selectedTags.join(','));
         }
       }
-        const response = await fetch(url.toString());
-        if (!response.ok) {
-          throw new Error('Ошибка загрузки данных');
-        }
-        const data = await response.json();
-        setGames(data);
-        
-      } catch (error) {
-        console.error('Ошибка:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      
+      const response = await fetch(url.toString());
+      if (!response.ok) throw new Error('Ошибка загрузки данных');
+      const data = await response.json();
+      setGames(data);
+    } catch (error) {
+      console.error('Ошибка:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchGames();
-  }, [searchQuery, priceRange.currentMax, selectedTags]);
+  fetchGames();
+}, [searchQuery, priceRange.min, priceRange.currentMax, selectedTags]);
   const handleSearch = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -161,18 +155,49 @@ const handleTagToggle = (tag) => {
                 </div>
                 <div className='sortpanel'>
                   <h3>Фильтры</h3>
-                  <div className="price-filter">
-                    <p>{formatPrice(priceRange.currentMax)}</p>
+                <div className="price-filter">
+                  <h4 className='h4'>Цена</h4>
+                  <label>
+                    От:
                     <input
-                      type="range"
-                      min={priceRange.min}
+                      type="number"
+                      min="0"
                       max={priceRange.max}
-                      value={priceRange.currentMax}
-                      onChange={handlePriceChange}
-                      step="150"
-                      className="price-slider"
+                      value={priceRangeInput.min}
+                      onChange={(e) =>
+                        setPriceRangeInput(prev => ({ ...prev, min: parseInt(e.target.value) || 0 }))
+                      }
+                      className="price-input"
                     />
-                  </div>
+                  </label>
+                  <label>
+                    До:
+                    <input
+                      type="number"
+                      min={priceRangeInput.min}
+                      max={priceRange.max}
+                      value={priceRangeInput.max}
+                      onChange={(e) =>
+                        setPriceRangeInput(prev => ({ ...prev, max: parseInt(e.target.value) || 1950 }))
+                      }
+                      className="price-input"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="apply-filter-btn"
+                    disabled={priceRangeInput.min === priceRange.min && 
+                            priceRangeInput.max === priceRange.currentMax}
+                    onClick={() => setPriceRange({
+                      ...priceRange,
+                      min: priceRangeInput.min,
+                      currentMax: priceRangeInput.max
+                    })}
+                  >
+                    Применить фильтр
+                  </button>
+                </div>
+
                   <div className="tags-filter">
                   <h4>Теги</h4>
                   <input

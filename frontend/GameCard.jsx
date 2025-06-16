@@ -29,7 +29,6 @@ function GameCard({ imageUrl, title, reviews, releaseDate, price, id }) {
           {reviews}
         </div>
       <p className='ReleaseDate'>Дата Выхода: {releaseDate}</p>
-      <p></p>
       </Link>
     </div>
   );

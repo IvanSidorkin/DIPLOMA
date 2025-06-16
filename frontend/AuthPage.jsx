@@ -12,7 +12,8 @@ export default function AuthPage() {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [usernameError, setUsernameError] = useState('');
@@ -48,6 +49,10 @@ export default function AuthPage() {
     if (!passwordRegex.test(password)) {
       setPasswordError('Пароль должен содержать: 6-30 символов, минимум 1 цифру и 1 спецсимвол');
       hasError = true;
+    }
+    if (!agreeTerms || !agreePrivacy) {
+      setError("Необходимо согласиться с условиями соглашения и политикой конфиденциальности");
+      return;
     }
 
     if (hasError) return;
@@ -201,6 +206,24 @@ export default function AuthPage() {
             </button>
           </div>
           {passwordError && <div className="field-error">{passwordError}</div>}
+          <div className="checkbox-group">
+            <label>
+              <input
+                type="checkbox"
+                checked={agreeTerms}
+                onChange={() => setAgreeTerms(!agreeTerms)}
+              />
+              Я принимаю <Link to="/terms" target="_blank">Пользовательское соглашение</Link>
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={agreePrivacy}
+                onChange={() => setAgreePrivacy(!agreePrivacy)}
+              />
+              Я согласен с <Link to="/privacy" target="_blank">Политикой конфиденциальности</Link>
+            </label>
+          </div>
 
           <button type="submit">Зарегистрироваться</button>
         </form>
